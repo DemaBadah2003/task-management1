@@ -117,3 +117,53 @@ export function saveSession(data: LoginSuccessResponse, rememberMe: boolean) {
     sessionStorage.setItem("taskly_session", token);
   }
 }
+
+/** Clears all session cookies and browser storage data. */
+export function clearSession() {
+  if (typeof window === "undefined") return;
+
+  document.cookie = "taskly_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
+  document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
+  document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
+
+  localStorage.removeItem("taskly_session");
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+
+  sessionStorage.removeItem("taskly_session");
+  sessionStorage.removeItem("access_token");
+  sessionStorage.removeItem("refresh_token");
+}
+
+/** Sends POST /auth/v1/logout request using current access token, then clears session. */
+export async function logoutApi(): Promise<void> {
+  // Import token dynamically or get session token
+  const getSessionToken = () => {
+    if (typeof window === "undefined") return null;
+    const match = document.cookie.match(/(?:^|; )taskly_session=([^;]*)/);
+    if (match && match[1]) return decodeURIComponent(match[1]);
+    return localStorage.getItem("taskly_session") || sessionStorage.getItem("taskly_session");
+  };
+
+  const token = getSessionToken();
+
+  if (token) {
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorBody = (await response.json().catch(() => null)) as ApiErrorResponse | null;
+      throw new ApiError(
+        errorBody?.message ?? errorBody?.error_description ?? "Logout failed, please try again."
+      );
+    }
+  }
+
+  clearSession();
+}

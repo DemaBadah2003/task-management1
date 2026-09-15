@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { useUser } from '@/src/context/user-context';
 
 interface MobileNavigationProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export function MobileNavigation({
 }: MobileNavigationProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { logout, isLoggingOut } = useUser();
 
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
 
@@ -31,14 +33,11 @@ export function MobileNavigation({
     verticalAlign: 'middle',
   };
 
-  const handleLogout = () => {
-    document.cookie =
-      'taskly_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    localStorage.removeItem('taskly_session');
-    sessionStorage.removeItem('taskly_session');
+  const handleLogout = async () => {
     onClose();
-    router.push('/login');
+    await logout();
   };
+
 
   const projectSubLinks = [
     {
@@ -268,18 +267,43 @@ export function MobileNavigation({
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-[#BA1A1A] transition-colors hover:bg-[#FFDAD6]/50"
+                disabled={isLoggingOut}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-[#BA1A1A] transition-colors hover:bg-[#FFDAD6]/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Image
-                  src="/icons/logout.svg"
-                  alt="Logout"
-                  width={18}
-                  height={18}
-                  className="h-4.5 w-4.5"
-                />
-                <span>Logout</span>
+                {isLoggingOut ? (
+                  <svg
+                    className="h-4.5 w-4.5 animate-spin shrink-0 text-[#BA1A1A]"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                ) : (
+                  <Image
+                    src="/icons/logout.svg"
+                    alt="Logout"
+                    width={18}
+                    height={18}
+                    className="h-4.5 w-4.5"
+                  />
+                )}
+                <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
               </button>
             </div>
+
           </div>
         </div>
       )}

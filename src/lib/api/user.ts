@@ -20,7 +20,7 @@ export const FALLBACK_USER: UserProfile = {
 /**
  * Retrieves session token from cookies or browser storage.
  */
-function getSessionToken(): string | null {
+export function getSessionToken(): string | null {
   if (typeof window === "undefined") return null;
 
   // Check cookies first
