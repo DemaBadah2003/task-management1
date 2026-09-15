@@ -52,7 +52,6 @@ export function Sidebar({
     await logout();
   };
 
-
   const projectLinks = [
     {
       name: 'Epics',
@@ -166,7 +165,7 @@ export function Sidebar({
             title={isCollapsed ? 'Projects' : undefined}
           >
             <Image
-              src="/icons/Project.svg"
+              src="/icons/project.svg"
               alt="Projects"
               width={20}
               height={20}
@@ -361,14 +360,20 @@ export function Sidebar({
           onClick={handleLogout}
           disabled={isLoggingOut}
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-[#BA1A1A] transition-colors hover:bg-[#FFDAD6]/50 disabled:opacity-50 disabled:cursor-not-allowed',
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-[#BA1A1A] transition-colors hover:bg-[#FFDAD6]/50 disabled:cursor-not-allowed disabled:opacity-50',
             isCollapsed && 'justify-center px-0'
           )}
-          title={isCollapsed ? (isLoggingOut ? 'Logging out...' : 'Log out') : undefined}
+          title={
+            isCollapsed
+              ? isLoggingOut
+                ? 'Logging out...'
+                : 'Log out'
+              : undefined
+          }
         >
           {isLoggingOut ? (
             <svg
-              className="h-4.5 w-4.5 animate-spin shrink-0 text-[#BA1A1A]"
+              className="h-4.5 w-4.5 shrink-0 animate-spin text-[#BA1A1A]"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -396,9 +401,10 @@ export function Sidebar({
               className="h-4.5 w-4.5 shrink-0"
             />
           )}
-          {!isCollapsed && <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>}
+          {!isCollapsed && (
+            <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+          )}
         </button>
-
       </div>
     </aside>
   );
