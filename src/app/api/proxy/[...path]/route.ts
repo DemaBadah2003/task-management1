@@ -4,7 +4,8 @@ async function handleProxy(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const path = url.pathname.replace(/^\/api\/proxy/, "");
-    const targetUrl = `https://mr89tdrc7j.apidog.io${path}${url.search}`;
+    const baseUrl = process.env.API_PROXY_TARGET_URL || "https://mr89tdrc7j.apidog.io";
+    const targetUrl = `${baseUrl}${path}${url.search}`;
 
     const contentType = req.headers.get("content-type") || "application/json";
     const body = req.method !== "GET" && req.method !== "HEAD" ? await req.text() : undefined;

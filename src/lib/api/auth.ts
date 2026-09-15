@@ -7,10 +7,11 @@ import type {
 } from "@/src/types/auth";
 import type { SignUpFormValues } from "@/src/lib/validations/sign-up-schema";
 
-// الرابط المباشر لقاعدة بيانات Supabase الحقيقية
-const SUPABASE_URL = "https://pwxmbbdntmvsiiyzhlmh.supabase.co";
-// المفتاح العام المأخوذ من ملف الـ .env.local
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "sb_publishable_chMoTDsN_gy2m1MK0KbCmA_GBICEBn9";
+// رابط وقيم Supabase المأخوذة من بيئة العمل .env.local
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://pwxmbbdntmvsiiyzhlmh.supabase.co";
+const SUPABASE_ANON_KEY =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "sb_publishable_chMoTDsN_gy2m1MK0KbCmA_GBICEBn9";
 
 export class ApiError extends Error {
   constructor(message: string) {
@@ -137,7 +138,6 @@ export function clearSession() {
 
 /** Sends POST /auth/v1/logout request using current access token, then clears session. */
 export async function logoutApi(): Promise<void> {
-  // Import token dynamically or get session token
   const getSessionToken = () => {
     if (typeof window === "undefined") return null;
     const match = document.cookie.match(/(?:^|; )taskly_session=([^;]*)/);
@@ -148,22 +148,20 @@ export async function logoutApi(): Promise<void> {
   const token = getSessionToken();
 
   if (token) {
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => null)) as ApiErrorResponse | null;
-      throw new ApiError(
-        errorBody?.message ?? errorBody?.error_description ?? "Logout failed, please try again."
-      );
+    try {
+      await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+    } catch (err) {
+      console.warn("Server logout notification skipped:", err);
     }
   }
 
+  // Always clear client-side session cookies and local storage
   clearSession();
 }

@@ -1,4 +1,6 @@
-const SUPABASE_URL = "https://pwxmbbdntmvsiiyzhlmh.supabase.co";
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??
+  "https://pwxmbbdntmvsiiyzhlmh.supabase.co";
 const SUPABASE_ANON_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
   "sb_publishable_chMoTDsN_gy2m1MK0KbCmA_GBICEBn9";
