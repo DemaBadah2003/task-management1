@@ -16,7 +16,7 @@ export function Navbar({ onToggleMobileMenu }: NavbarProps) {
   const initials = getInitials(user?.name);
 
   return (
-    <header className="sticky top-0 z-30 flex h-[64px] w-full items-center justify-between border-b border-[#E8EDFF] bg-[#F9F9FF] px-4 py-[12px] sm:px-6">
+    <header className="sticky top-0 z-30 flex h-[64px] w-full items-center justify-between gap-2 overflow-x-hidden border-b border-[#E8EDFF] bg-[#F9F9FF] px-4 py-[12px] sm:px-6">
       {/* Left section: Mobile/Tablet Burger button & Brand Logo */}
       <div className="flex items-center gap-3">
         <button
@@ -52,7 +52,7 @@ export function Navbar({ onToggleMobileMenu }: NavbarProps) {
       </div>
 
       {/* Right section: Authenticated User Info */}
-      <div className="ml-auto flex items-center gap-3">
+      <div className="ml-auto flex min-w-0 items-center gap-3">
         {loading ? (
           <div className="flex animate-pulse items-center gap-3">
             <div className="hidden flex-col items-end gap-1 sm:flex">
@@ -64,11 +64,11 @@ export function Navbar({ onToggleMobileMenu }: NavbarProps) {
         ) : (
           <>
             {/* Full Name & Job Title (Visible on sm+ screens) */}
-            <div className="hidden flex-col items-end text-right sm:flex">
-              <span className="text-[14px] leading-tight font-bold text-[#041B3C]">
+            <div className="hidden max-w-[140px] min-w-0 flex-col items-end text-right sm:flex md:max-w-[200px] lg:max-w-[280px]">
+              <span className="w-full truncate text-[14px] leading-tight font-bold text-[#041B3C]">
                 {user?.name || 'User'}
               </span>
-              <span className="mt-0.5 text-[10px] font-bold tracking-[0.05em] text-[#4F5F7B] uppercase sm:text-[11px]">
+              <span className="mt-0.5 w-full truncate text-[10px] font-bold tracking-[0.05em] text-[#4F5F7B] uppercase sm:text-[11px]">
                 {user?.jobTitle || 'MEMBER'}
               </span>
             </div>

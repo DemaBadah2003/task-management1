@@ -123,7 +123,7 @@ export function Sidebar({
     /* Sidebar Shell with exact Figma color background: #F1F3FF */
     <aside
       className={cn(
-        'relative flex h-full min-h-screen flex-col justify-between border-r border-[#E8EDFF] bg-[#F1F3FF] transition-all duration-300 select-none',
+        'relative flex h-full min-h-screen flex-col justify-between border-r border-black/10 bg-[#F1F3FF] transition-all duration-300 select-none',
         isCollapsed ? 'w-[72px] px-2 py-4' : 'w-[256px] p-4',
         className
       )}
@@ -174,12 +174,7 @@ export function Sidebar({
               className="h-5 w-5 shrink-0"
             />
             {!isCollapsed && (
-              <span
-                style={{
-                  ...navTextStyle,
-                  color: pathname === '/project' ? '#003D9B' : '#041B3C',
-                }}
-              >
+              <span style={navTextStyle} className="text-[#041B3C]">
                 Projects
               </span>
             )}
@@ -205,130 +200,135 @@ export function Sidebar({
               className="h-4.5 w-4.5 shrink-0"
             />
             {!isCollapsed && (
-              <span
-                style={{
-                  ...navTextStyle,
-                  color: pathname === '/statistics' ? '#003D9B' : '#041B3C',
-                }}
-              >
+              <span style={navTextStyle} className="text-[#041B3C]">
                 My Statistics
               </span>
             )}
           </Link>
         </nav>
 
-        {/* Section 3: Current Active Project Accordion & Collapsed Floating Popup */}
-        {!isCollapsed ? (
-          /* EXPANDED MODE: Accordion */
-          <div className="flex flex-col overflow-hidden rounded-[12px] border border-[#E8EDFF]">
-            {/* Accordion Header (exact Figma background: #D7E2FF) */}
-            <button
-              type="button"
-              onClick={() => setIsAccordionOpen((prev) => !prev)}
-              className="flex w-full items-center justify-between bg-[#D7E2FF] p-3 text-left transition-colors hover:bg-[#C9DAFF]"
-            >
-              <div className="flex min-w-0 items-center gap-2.5">
+        {/* Divider + Active Project grouped tightly so the line sits directly above the folder icon */}
+        <div className="flex flex-col gap-3">
+          <div
+            className={cn(
+              'border-t border-[#E8EDFF]',
+              isCollapsed && 'mx-auto w-8'
+            )}
+          />
+
+          {/* Section 3: Current Active Project Accordion & Collapsed Floating Popup */}
+          {!isCollapsed ? (
+            /* EXPANDED MODE: Accordion */
+            <div className="flex flex-col overflow-hidden rounded-[12px] border border-[#E8EDFF]">
+              {/* Accordion Header (exact Figma background: #D7E2FF) */}
+              <button
+                type="button"
+                onClick={() => setIsAccordionOpen((prev) => !prev)}
+                className="flex w-full items-center justify-between bg-[#D7E2FF] p-3 text-left transition-colors hover:bg-[#C9DAFF]"
+              >
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Image
+                    src="/icons/folder.svg"
+                    alt="Active Project"
+                    width={18}
+                    height={18}
+                    className="h-4.5 w-4.5 shrink-0"
+                  />
+                  <span className="truncate text-[14px] leading-[20px] font-semibold text-[#041B3C]">
+                    Active Project Na...
+                  </span>
+                </div>
+                <svg
+                  className={cn(
+                    'h-4 w-4 shrink-0 text-[#041B3C] transition-transform duration-200',
+                    isAccordionOpen ? 'rotate-180' : 'rotate-0'
+                  )}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              {/* Sub-links container: text stays the SAME weight (font-medium) whether
+                 selected or not — only the background pill (#F1F3FF) indicates selection */}
+              {isAccordionOpen && (
+                <div className="flex flex-col gap-[4px] bg-white p-[8px]">
+                  {projectLinks.map((link) => {
+                    const isSelected = pathname === link.href;
+                    return (
+                      <Link
+                        key={link.name}
+                        href={link.href}
+                        className={cn(
+                          'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors',
+                          isSelected ? 'bg-[#F1F3FF]' : 'hover:bg-[#F1F3FF]/60'
+                        )}
+                      >
+                        {link.icon}
+                        <span>{link.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* COLLAPSED MODE: Project Icon with Floating Popup Menu */
+            <div className="relative flex justify-center" ref={popupRef}>
+              <button
+                type="button"
+                onClick={() => setIsPopupOpen((prev) => !prev)}
+                aria-label="Active project links popup"
+                className={cn(
+                  'flex h-11 w-11 items-center justify-center rounded-xl border border-[#E8EDFF] bg-[#D7E2FF] text-[#041B3C] transition-all hover:bg-[#C9DAFF]',
+                  isPopupOpen && 'bg-[#C9DAFF] ring-2 ring-[#0052CC]/50'
+                )}
+                title="Active Project Links"
+              >
                 <Image
                   src="/icons/folder.svg"
                   alt="Active Project"
-                  width={18}
-                  height={18}
-                  className="h-4.5 w-4.5 shrink-0"
+                  width={20}
+                  height={20}
+                  className="h-5 w-5"
                 />
-                <span className="truncate text-[14px] leading-[20px] font-semibold text-[#041B3C]">
-                  Active Project Na...
-                </span>
-              </div>
-              <svg
-                className={cn(
-                  'h-4 w-4 shrink-0 text-[#041B3C] transition-transform duration-200',
-                  isAccordionOpen ? 'rotate-180' : 'rotate-0'
-                )}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
+              </button>
 
-            {/* Sub-links container with exact Figma specs (bg #FFFFFF, selected item bg #F1F3FF, radius 40px, height 40px, padding 10px 16px, gap 12px) */}
-            {isAccordionOpen && (
-              <div className="flex flex-col gap-[4px] bg-white p-[8px]">
-                {projectLinks.map((link) => {
-                  const isSelected = pathname === link.href;
-                  return (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      className={cn(
-                        'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium transition-colors',
-                        isSelected
-                          ? 'bg-[#F1F3FF] font-bold text-[#003D9B]'
-                          : 'text-[#041B3C] hover:bg-[#F1F3FF]/60 hover:text-[#003D9B]'
-                      )}
-                    >
-                      {link.icon}
-                      <span>{link.name}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ) : (
-          /* COLLAPSED MODE: Project Icon with Floating Popup Menu */
-          <div className="relative flex justify-center" ref={popupRef}>
-            <button
-              type="button"
-              onClick={() => setIsPopupOpen((prev) => !prev)}
-              aria-label="Active project links popup"
-              className={cn(
-                'flex h-11 w-11 items-center justify-center rounded-xl border border-[#E8EDFF] bg-[#D7E2FF] text-[#041B3C] transition-all hover:bg-[#C9DAFF]',
-                isPopupOpen && 'bg-[#C9DAFF] ring-2 ring-[#0052CC]/50'
+              {/* Floating Popover Menu: text stays the SAME weight (font-medium) whether
+                 selected or not — only the background pill (white) indicates selection */}
+              {isPopupOpen && (
+                <div className="animate-in fade-in zoom-in-95 absolute top-0 left-[64px] z-50 flex w-[246px] flex-col gap-[4px] rounded-l-[12px] rounded-r-[8px] border border-[#E8EDFF] bg-[#D7E2FF] p-[8px] shadow-xl duration-150">
+                  {projectLinks.map((link) => {
+                    const isSelected = pathname === link.href;
+                    return (
+                      <Link
+                        key={link.name}
+                        href={link.href}
+                        onClick={() => setIsPopupOpen(false)}
+                        className={cn(
+                          'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors',
+                          isSelected
+                            ? 'bg-white shadow-2xs'
+                            : 'hover:bg-white/60'
+                        )}
+                      >
+                        {link.icon}
+                        <span>{link.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
               )}
-              title="Active Project Links"
-            >
-              <Image
-                src="/icons/Project.svg"
-                alt="Active Project"
-                width={20}
-                height={20}
-                className="h-5 w-5"
-              />
-            </button>
-
-            {/* Floating Popover Menu with exact Figma Frame 7 specs */}
-            {isPopupOpen && (
-              <div className="animate-in fade-in zoom-in-95 absolute top-0 left-[64px] z-50 flex w-[246px] flex-col gap-[4px] rounded-l-[12px] rounded-r-[8px] border border-[#E8EDFF] bg-[#D7E2FF] p-[8px] shadow-xl duration-150">
-                {projectLinks.map((link) => {
-                  const isSelected = pathname === link.href;
-                  return (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      onClick={() => setIsPopupOpen(false)}
-                      className={cn(
-                        'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium transition-colors',
-                        isSelected
-                          ? 'bg-white font-bold text-[#003D9B] shadow-2xs'
-                          : 'text-[#041B3C] hover:bg-white/60 hover:text-[#003D9B]'
-                      )}
-                    >
-                      {link.icon}
-                      <span>{link.name}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bottom Section: Collapse Toggle & Logout Buttons */}

@@ -10,9 +10,9 @@
   --color-primary-container: #0052cc;
   --color-input-bg: #d7e2ff;
   --color-checklist-bg: #e8edff;
-  --color-surface-highest: #dbe2f9;
+  --color-surface-highest: #d7e2ff;
   --color-surface-medium: #737685;
-  --color-surface-low: #d7e2ff;
+  --color-surface-low: #f1f3ff;
   --color-background: #f9f9ff;
 
   /* ---- Color: Slate Neutrals ---- */
@@ -32,7 +32,7 @@
   --color-warning-bg: #fff8e1;
 
   /* ---- Typography: Inter ---- */
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   --text-display-lg: 3rem; /* 48px */
   --text-display-lg--line-height: 1.15;
@@ -81,5 +81,3 @@ body {
   color: var(--color-slate-900);
   font-family: var(--font-sans);
 }
-
-
