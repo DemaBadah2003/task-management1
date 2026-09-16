@@ -24,6 +24,9 @@ export function MobileNavigation({
 
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
 
+  const isFormPage =
+    pathname.includes('/project/add') || pathname.includes('/project/edit');
+
   const navTextStyle: React.CSSProperties = {
     fontFamily: 'Inter',
     fontWeight: 500,
@@ -37,7 +40,6 @@ export function MobileNavigation({
     onClose();
     await logout();
   };
-
 
   const projectSubLinks = [
     {
@@ -159,7 +161,7 @@ export function MobileNavigation({
                   }`}
                 >
                   <Image
-                    src="/icons/Project.svg"
+                    src="/icons/project.svg"
                     alt="Projects"
                     width={20}
                     height={20}
@@ -192,7 +194,7 @@ export function MobileNavigation({
                 </Link>
               </nav>
 
-              {/* Divider between the nav links and the Active Project accordion */}
+              {/* Divider between nav links and Active Project accordion */}
               {hasActiveProject && (
                 <div className="-mt-3 border-t border-[#E8EDFF]" />
               )}
@@ -234,8 +236,6 @@ export function MobileNavigation({
                     </svg>
                   </button>
 
-                  {/* Sub-links: text stays the SAME weight/color whether selected or
-                     not — only the background pill indicates selection */}
                   {isAccordionOpen && (
                     <div className="flex flex-col gap-[4px] bg-white p-[8px]">
                       {projectSubLinks.map((link) => {
@@ -303,15 +303,14 @@ export function MobileNavigation({
                 <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
               </button>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* 2. Mobile Bottom Navigation Bar */}
-      <nav className="fixed right-0 bottom-0 left-0 z-40 flex h-[64px] w-full items-center justify-around border-t border-[#E8EDFF] bg-[#F1F3FF] px-2 shadow-lg md:hidden">
-        {hasActiveProject ? (
-          <>
+      {/* 2. Mobile Bottom Navigation Bar: Uses /icons/project.svg matching Figma Screenshots 1 & 2 */}
+      <nav className="fixed right-0 bottom-0 left-0 z-40 flex h-[64px] w-full items-center justify-center border-t border-[#E8EDFF] bg-[#F1F3FF] px-2 shadow-lg md:hidden">
+        {!isFormPage && hasActiveProject ? (
+          <div className="flex w-full items-center justify-around">
             <Link
               href="/project/epics"
               className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
@@ -355,7 +354,7 @@ export function MobileNavigation({
               }`}
             >
               <Image
-                src="/icons/Project.svg"
+                src="/icons/project.svg"
                 alt="Projects"
                 width={20}
                 height={20}
@@ -399,20 +398,21 @@ export function MobileNavigation({
               />
               <span>Details</span>
             </Link>
-          </>
+          </div>
         ) : (
+          /* Single Centered Projects item using /icons/project.svg */
           <Link
             href="/project"
-            className="flex flex-col items-center gap-1 text-[11px] font-bold text-[#003D9B]"
+            className="flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#041B3CB2]"
           >
             <Image
-              src="/icons/Project.svg"
+              src="/icons/project.svg"
               alt="Projects"
-              width={24}
-              height={24}
-              className="h-6 w-6"
+              width={20}
+              height={20}
+              className="h-5 w-5"
             />
-            <span>Projects</span>
+            <span className="text-[#041B3CB2]">Projects</span>
           </Link>
         )}
       </nav>
