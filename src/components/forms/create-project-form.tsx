@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'sonner';
 import {
   createProjectSchema,
   type CreateProjectFormValues,
@@ -45,20 +44,19 @@ export function CreateProjectForm() {
       // Clear form on success
       reset({ title: '', description: '' });
 
-      // Show success toast
-      toast.success('Project created successfully');
+      // تحديث بيانات الصفحة والانتقال لصفحة المشاريع لتظهر الكاردات فوراً
+      router.refresh();
+      router.push('/project');
     } catch (err) {
-      const errorMsg =
-        err instanceof Error
-          ? err.message
-          : 'Failed To Add New Project, Try Again Later';
-      setApiError(errorMsg);
-      toast.error(errorMsg);
+      // Log the real error for debugging; show a generic message to the user
+      console.error('Create project error:', err);
+
+      setApiError('Failed To Add New Project, Try Again Later');
     }
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[342px] sm:max-w-[672px] flex-col gap-6 sm:gap-0 sm:overflow-hidden sm:rounded-[8px] sm:border sm:border-[#E8EDFF] sm:bg-white sm:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
+    <div className="mx-auto flex w-full max-w-[342px] flex-col gap-6 sm:max-w-[672px] sm:gap-0 sm:overflow-hidden sm:rounded-[8px] sm:border sm:border-[#E8EDFF] sm:bg-white sm:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
       {/* Form Content Area: No card padding on mobile, 56px inset padding on desktop */}
       <div className="flex flex-col gap-6 sm:px-[56px] sm:py-[48px]">
         {/* Card Header: Icon hidden on mobile, visible on sm+ */}
@@ -68,14 +66,14 @@ export function CreateProjectForm() {
             alt="Initialize New Project"
             width={46}
             height={44}
-            className="hidden sm:block h-[44px] w-[46px] shrink-0"
+            className="hidden h-[44px] w-[46px] shrink-0 sm:block"
             priority
           />
           <div className="flex flex-col">
-            <h2 className="text-[24px] font-semibold leading-[32px] tracking-[0px] text-[#041B3C]">
+            <h2 className="text-[24px] leading-[32px] font-semibold tracking-[0px] text-[#041B3C]">
               Initialize New Project
             </h2>
-            <p className="mt-0.5 text-[14px] font-normal leading-[20px] tracking-[0px] text-[#4F5F7B]">
+            <p className="mt-0.5 text-[14px] leading-[20px] font-normal tracking-[0px] text-[#4F5F7B]">
               Define the scope and foundational details of your project.
             </p>
           </div>
@@ -86,21 +84,11 @@ export function CreateProjectForm() {
           onSubmit={handleSubmit(onSubmit)}
           className="flex flex-col gap-5"
         >
-          {/* Top Form-level API Error message */}
-          {apiError && (
-            <div
-              role="alert"
-              className="rounded-[8px] sm:rounded-[4px] border border-[#BA1A1A]/30 bg-[#FFDAD6]/50 p-3.5 text-[13px] font-medium text-[#BA1A1A]"
-            >
-              {apiError}
-            </div>
-          )}
-
           {/* Project Title Field */}
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="title"
-              className="text-[11px] font-bold leading-[16.5px] tracking-[0.55px] uppercase text-[#4F5F7B]"
+              className="text-[11px] leading-[16.5px] font-bold tracking-[0.55px] text-[#4F5F7B] uppercase"
             >
               PROJECT TITLE <span className="text-[#BA1A1A]">*</span>
             </label>
@@ -110,14 +98,14 @@ export function CreateProjectForm() {
               placeholder="Enter project title..."
               aria-invalid={Boolean(errors.title)}
               className={cn(
-                'w-full rounded-[8px] sm:rounded-[4px] bg-[#D7E2FF] p-4 sm:py-[12px] sm:px-[16px]',
-                'text-[16px] font-normal leading-[24px] text-[#041B3C]',
-                'placeholder:text-[#4F5F7B80] border-none outline-none'
+                'w-full rounded-[8px] bg-[#D7E2FF] p-4 sm:rounded-[4px] sm:px-[16px] sm:py-[12px]',
+                'text-[16px] leading-[24px] font-normal text-[#041B3C]',
+                'border-none outline-none placeholder:text-[#4F5F7B80]'
               )}
               {...register('title')}
             />
             {errors.title && (
-              <div className="mt-1 flex items-center gap-1.5 text-[12px] font-medium leading-[18px] text-[#BA1A1A]">
+              <div className="mt-1 flex items-center gap-1.5 text-[12px] leading-[18px] font-medium text-[#BA1A1A]">
                 <svg
                   className="h-4 w-4 shrink-0"
                   fill="none"
@@ -140,7 +128,7 @@ export function CreateProjectForm() {
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="description"
-              className="text-[11px] font-bold leading-[16.5px] tracking-[0.55px] uppercase text-[#4F5F7B]"
+              className="text-[11px] leading-[16.5px] font-bold tracking-[0.55px] text-[#4F5F7B] uppercase"
             >
               DESCRIPTION
             </label>
@@ -150,16 +138,16 @@ export function CreateProjectForm() {
               placeholder="Provide a high-level overview of the project's architectural objectives and key milestones..."
               aria-invalid={Boolean(errors.description)}
               className={cn(
-                'w-full rounded-[8px] sm:rounded-[4px] bg-[#D7E2FF] pt-4 px-4 pb-[88px] sm:pt-[12px] sm:px-[16px] sm:pb-[84px]',
-                'text-[16px] font-normal leading-[24px] text-[#041B3C]',
-                'placeholder:text-[#4F5F7B80] border-none outline-none resize-none'
+                'w-full rounded-[8px] bg-[#D7E2FF] px-4 pt-4 pb-[88px] sm:rounded-[4px] sm:px-[16px] sm:pt-[12px] sm:pb-[84px]',
+                'text-[16px] leading-[24px] font-normal text-[#041B3C]',
+                'resize-none border-none outline-none placeholder:text-[#4F5F7B80]'
               )}
               {...register('description')}
             />
             {/* Character counter */}
-            <div className="flex items-center justify-between mt-0.5">
+            <div className="mt-0.5 flex items-center justify-between">
               {errors.description ? (
-                <div className="flex items-center gap-1.5 text-[12px] font-medium leading-[18px] text-[#BA1A1A]">
+                <div className="flex items-center gap-1.5 text-[12px] leading-[18px] font-medium text-[#BA1A1A]">
                   <svg
                     className="h-4 w-4 shrink-0"
                     fill="none"
@@ -175,21 +163,24 @@ export function CreateProjectForm() {
                   </svg>
                   <span>{errors.description.message}</span>
                 </div>
-              ) : <div />}
-              <span className="text-[11px] font-medium leading-[16.5px] tracking-[0px] text-[#4F5F7B]">
-                {descriptionValue.length} / 500<span className="hidden sm:inline"> characters</span>
+              ) : (
+                <div />
+              )}
+              <span className="text-[11px] leading-[16.5px] font-medium tracking-[0px] text-[#4F5F7B]">
+                {descriptionValue.length} / 500
+                <span className="hidden sm:inline"> characters</span>
               </span>
             </div>
           </div>
 
           {/* Action Buttons: Exact Typography & Shadows matching Figma */}
-          <div className="mt-4 flex flex-col gap-3 w-full sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="submit"
               disabled={isSubmitting}
               className={cn(
-                'order-1 sm:order-2 inline-flex h-[56px] sm:h-[44px] w-full sm:w-auto sm:min-w-[160px] items-center justify-center rounded-[8px] sm:rounded-[4px] bg-[#003D9B] px-6 py-2.5',
-                'text-[16px] sm:text-[14px] font-bold leading-[24px] sm:leading-[20px] tracking-[0px] text-white text-center',
+                'order-1 inline-flex h-[56px] w-full items-center justify-center rounded-[8px] bg-[#003D9B] px-6 py-2.5 sm:order-2 sm:h-[44px] sm:w-auto sm:min-w-[160px] sm:rounded-[4px]',
+                'text-center text-[16px] leading-[24px] font-bold tracking-[0px] text-white sm:text-[14px] sm:leading-[20px]',
                 'shadow-[0px_4px_6px_-4px_rgba(0,0,0,0.1),0px_10px_15px_-3px_rgba(0,0,0,0.1)] sm:shadow-[0px_4px_6px_-4px_rgba(0,61,155,0.2),0px_10px_15px_-3px_rgba(0,61,155,0.2)]',
                 'transition-all hover:bg-[#002B70] active:scale-[0.99]',
                 'disabled:cursor-not-allowed disabled:opacity-50'
@@ -226,26 +217,37 @@ export function CreateProjectForm() {
             <button
               type="button"
               onClick={() => router.push('/project')}
-              className="order-2 sm:order-1 text-center w-full sm:w-auto text-[16px] sm:text-[14px] font-medium sm:font-bold leading-[24px] sm:leading-[20px] tracking-[0px] text-[#003D9B] sm:text-[#4F5F7B] transition-colors hover:text-[#041B3C] focus:outline-none py-2 sm:py-0"
+              className="order-2 w-full py-2 text-center text-[16px] leading-[24px] font-medium tracking-[0px] text-[#003D9B] transition-colors hover:text-[#041B3C] focus:outline-none sm:order-1 sm:w-auto sm:py-0 sm:text-[14px] sm:leading-[20px] sm:font-bold sm:text-[#4F5F7B]"
             >
               Back
             </button>
           </div>
+
+          {/* Bottom Form-level API Error message (matches Figma placement below the buttons) */}
+          {apiError && (
+            <p
+              role="alert"
+              className="text-center text-[13px] font-medium text-[#BA1A1A]"
+            >
+              {apiError}
+            </p>
+          )}
         </form>
 
         {/* Mobile Pro Tip Standalone Card sitting on page background (Fill 342px x Hug 106px, Radius 8px, Padding 24px, #F1F3FF, NO Icon) */}
-        <div className="flex sm:hidden flex-col gap-1 text-left w-full rounded-[8px] bg-[#F1F3FF] p-[24px] mt-2">
-          <span className="text-[12px] font-bold leading-[19.5px] text-[#4F5F7B]">
+        <div className="mt-2 flex w-full flex-col gap-1 rounded-[8px] bg-[#F1F3FF] p-[24px] text-left sm:hidden">
+          <span className="text-[12px] leading-[19.5px] font-bold text-[#4F5F7B]">
             Pro Tip
           </span>
-          <p className="text-[12px] font-normal leading-[18px] text-[#4F5F7B]">
-            You can invite project members and assign epics immediately after the initial creation process.
+          <p className="text-[12px] leading-[18px] font-normal text-[#4F5F7B]">
+            You can invite project members and assign epics immediately after
+            the initial creation process.
           </p>
         </div>
       </div>
 
       {/* Desktop Pro Tip Footer Section */}
-      <div className="hidden sm:flex w-full items-center gap-3 bg-[#F1F3FF] p-[24px] border-t border-[#E8EDFF]">
+      <div className="hidden w-full items-center gap-3 border-t border-[#E8EDFF] bg-[#F1F3FF] p-[24px] sm:flex">
         <Image
           src="/icons/lamp.svg"
           alt="Pro Tip"
@@ -256,7 +258,8 @@ export function CreateProjectForm() {
         <p className="text-[12px] leading-[19.5px] text-[#041B3C]">
           <span className="font-bold text-[#4F5F7B]">Pro Tip: </span>
           <span className="font-normal text-[#4F5F7B]">
-            You can invite project members and assign epics immediately after the initial creation process.
+            You can invite project members and assign epics immediately after
+            the initial creation process.
           </span>
         </p>
       </div>

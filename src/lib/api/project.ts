@@ -1,5 +1,6 @@
 import { getSessionToken } from "./user";
 import { ApiError } from "./auth";
+import type { Project } from "@/src/types/project";
 
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ??
@@ -20,6 +21,7 @@ export interface UpdateProjectPayload {
   description?: string;
 }
 
+// 1. دالة إنشاء مشروع جديد
 export async function createProjectApi(payload: CreateProjectPayload): Promise<any> {
   const token = getSessionToken();
 
@@ -59,6 +61,54 @@ export async function createProjectApi(payload: CreateProjectPayload): Promise<a
   }
 }
 
+// 2. دالة جلب المشاريع (مضافة حديثاً لتعمل مع صفحة القائمة والكاردات)
+// 2. دالة جلب المشاريع المعدلة والآمنة
+// 2. دالة جلب المشاريع المعدلة والآمنة
+export async function getProjectsApi(): Promise<Project[]> {
+  const token = getSessionToken();
+  console.log('server token exists?', !!token);
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_ANON_KEY,
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/projects?select=*&order=created_at.desc`, {
+    method: "GET",
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const errorMessage =
+      errorBody?.message ||
+      errorBody?.msg ||
+      errorBody?.error_description ||
+      "Failed to fetch projects";
+    throw new ApiError(errorMessage);
+  }
+
+  const resText = await response.text();
+  try {
+    const data = JSON.parse(resText);
+    
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      name: item.name || "Untitled Project",
+      description: item.description || "",
+      // معالجة التاريخ لضمان عدم حدوث خطأ في التنسيق لو كان الحقل فارغاً
+      createdAt: item.created_at || item.createdAt || new Date().toISOString(),
+    }));
+  } catch (err) {
+    console.error("Failed to parse projects:", err);
+    return [];
+  }
+}
+// 3. دالة تحديث المشروع
 export async function updateProjectApi(payload: UpdateProjectPayload): Promise<any> {
   const token = getSessionToken();
 

@@ -1,46 +1,89 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AuthenticatedLayout } from '@/src/components/layout/AuthenticatedLayout';
+import { ProjectCard } from '@/src/components/projects/ProjectCard';
+import { AddProjectCard } from '@/src/components/projects/AddProjectCard';
+import { AddProjectFab } from '@/src/components/projects/AddProjectFab';
+import { ProjectsPagination } from '@/src/components/projects/ProjectsPagination';
+import { ProjectsEmptyState } from '@/src/components/projects/ProjectsEmptyState';
+import { getProjectsApi } from '@/src/lib/api/project';
+import type { Project } from '@/src/types/project';
+
+// منع التخزين المؤقت لضمان ظهور المشاريع الجديدة فور إضافتها
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: 'Projects · Taskly',
-  description: 'Manage your Taskly projects.',
 };
 
-export default function ProjectsPage() {
+interface ProjectsListProps {
+  projects?: Project[];
+}
+
+export function ProjectsList({ projects = [] }: ProjectsListProps) {
+  const hasProjects = projects.length > 0;
+
   return (
-    <AuthenticatedLayout>
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        {/* Page Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[36px] font-semibold leading-[40px] tracking-[-0.9px] text-[#041B3C]">
-              Projects
-            </h1>
-            <p className="mt-1 text-[14px] text-[#4F5F7B]">
-              Overview of all active and created projects.
-            </p>
-          </div>
+    <div className="@container flex flex-col gap-6">
+      <div className="flex flex-row flex-wrap items-center justify-between gap-4">
+        {hasProjects && (
           <Link
             href="/project/add"
-            className="inline-flex items-center gap-2 rounded-[4px] bg-[#003D9B] px-5 py-2.5 text-[14px] font-bold text-white shadow-[0px_4px_6px_-4px_rgba(0,61,155,0.2)] transition-all hover:bg-[#002B70]"
+            className="hidden w-fit shrink-0 items-center justify-center gap-2 rounded-[2px] px-6 py-3 text-center align-middle text-[16px] leading-[24px] font-medium tracking-[0px] whitespace-nowrap text-white shadow-[0px_1px_2px_0px_#0000000D] md:flex"
+            style={{
+              background: 'linear-gradient(135deg, #003D9B 0%, #0052CC 100%)',
+            }}
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add New Project
+            Create New Project
           </Link>
+        )}
+      </div>
+
+      {hasProjects ? (
+        <>
+          <div className="grid grid-cols-1 gap-4 @lg:grid-cols-2 @4xl:grid-cols-3">
+            {projects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+            <AddProjectCard />
+          </div>
+
+          <div className="mt-[138.5px]">
+            <ProjectsPagination />
+          </div>
+
+          <AddProjectFab />
+        </>
+      ) : (
+        <ProjectsEmptyState />
+      )}
+    </div>
+  );
+}
+
+export default async function ProjectsPage() {
+  let projects: Project[] = [];
+
+  try {
+    projects = await getProjectsApi();
+  } catch (error) {
+    console.error('Failed to fetch projects in ProjectsPage:', error);
+  }
+
+  return (
+    <AuthenticatedLayout>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[36px] leading-[40px] font-semibold tracking-[-0.9px] text-[#041B3C]">
+            Projects
+          </h1>
+          <p className="text-[14px] leading-[20px] text-[#4F5F7B]">
+            Manage and curate your projects
+          </p>
         </div>
+
+        <ProjectsList projects={projects} />
       </div>
     </AuthenticatedLayout>
   );
