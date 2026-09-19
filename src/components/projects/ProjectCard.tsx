@@ -1,4 +1,6 @@
-import Link from 'next/link';
+'use client';
+
+import { useRouter } from 'next/navigation';
 import type { Project } from '@/src/types/project';
 
 interface ProjectCardProps {
@@ -30,10 +32,31 @@ function formatDate(dateString: string): string {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
+  const router = useRouter();
+
+  const handleCardClick = () => {
+    router.push(`/project/${project.id}/epics`);
+  };
+
+  const handleEpicsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/project/${project.id}/epics`);
+  };
+
+  const handleTasksClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/project/${project.id}/tasks`);
+  };
+
+  const handleMembersClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/project/${project.id}/members`);
+  };
+
   return (
-    <Link
-      href={`/project/${project.id}/epics`}
-      className="flex min-h-[220px] w-full min-w-0 flex-col gap-[var(--spacing-card-gap)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-card-border)] bg-white p-6 transition-shadow hover:shadow-md"
+    <div
+      onClick={handleCardClick}
+      className="flex min-h-[220px] w-full min-w-0 cursor-pointer flex-col gap-[var(--spacing-card-gap)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-card-border)] bg-white p-6 transition-shadow hover:shadow-md"
     >
       <div className="flex min-w-0 flex-col gap-2">
         <h3 className="line-clamp-2 text-[length:var(--text-card-title)] leading-[var(--text-card-title--line-height)] font-[var(--text-card-title--font-weight)] break-words text-[var(--color-slate-900)]">
@@ -44,9 +67,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
         </p>
       </div>
 
-      {/* flex-wrap عشان لو ضاق الكارد ينزلوا سطر بدل ما ينقصّوا */}
       <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-2">
-        <span className="flex shrink-0 items-center gap-1 text-[length:var(--text-badge-sm)] leading-[var(--text-badge-sm--line-height)] font-[var(--text-badge-sm--font-weight)] whitespace-nowrap text-[var(--color-primary)]">
+        <button
+          type="button"
+          onClick={handleEpicsClick}
+          className="flex shrink-0 items-center gap-1 text-[length:var(--text-badge-sm)] leading-[var(--text-badge-sm--line-height)] font-[var(--text-badge-sm--font-weight)] whitespace-nowrap text-[var(--color-primary)] transition-opacity hover:opacity-80 focus:outline-none"
+        >
           <span
             className="icon-primary h-[15.07px] w-5 shrink-0"
             style={{
@@ -55,8 +81,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
             }}
           />
           Epics
-        </span>
-        <span className="flex shrink-0 items-center gap-1 text-[length:var(--text-badge-sm)] leading-[var(--text-badge-sm--line-height)] font-[var(--text-badge-sm--font-weight)] whitespace-nowrap text-[var(--color-primary)]">
+        </button>
+
+        <button
+          type="button"
+          onClick={handleTasksClick}
+          className="flex shrink-0 items-center gap-1 text-[length:var(--text-badge-sm)] leading-[var(--text-badge-sm--line-height)] font-[var(--text-badge-sm--font-weight)] whitespace-nowrap text-[var(--color-primary)] transition-opacity hover:opacity-80 focus:outline-none"
+        >
           <span
             className="icon-primary h-[15.07px] w-5 shrink-0"
             style={{
@@ -65,8 +96,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
             }}
           />
           Tasks
-        </span>
-        <span className="flex shrink-0 items-center gap-1 text-[length:var(--text-badge-sm)] leading-[var(--text-badge-sm--line-height)] font-[var(--text-badge-sm--font-weight)] whitespace-nowrap text-[var(--color-primary)]">
+        </button>
+
+        <button
+          type="button"
+          onClick={handleMembersClick}
+          className="flex shrink-0 items-center gap-1 text-[length:var(--text-badge-sm)] leading-[var(--text-badge-sm--line-height)] font-[var(--text-badge-sm--font-weight)] whitespace-nowrap text-[var(--color-primary)] transition-opacity hover:opacity-80 focus:outline-none"
+        >
           <span
             className="icon-primary h-[15.07px] w-5 shrink-0"
             style={{
@@ -75,7 +111,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             }}
           />
           Members
-        </span>
+        </button>
       </div>
 
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2">
@@ -86,6 +122,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
           {formatDate(project.createdAt)}
         </span>
       </div>
-    </Link>
+    </div>
   );
 }

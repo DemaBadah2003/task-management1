@@ -66,19 +66,29 @@ export function Navbar({ onToggleMobileMenu }: NavbarProps) {
             {/* Full Name & Job Title (Visible on sm+ screens) */}
             <div className="hidden max-w-[140px] min-w-0 flex-col items-end text-right sm:flex md:max-w-[200px] lg:max-w-[280px]">
               <span className="w-full truncate text-[14px] leading-tight font-bold text-[#041B3C]">
-                {user?.name || 'User'}
+                {user?.name || 'Mahmoud Taha'}
               </span>
-              <span className="mt-0.5 w-full truncate text-[10px] font-bold tracking-[0.05em] text-[#4F5F7B] uppercase sm:text-[11px]">
-                {user?.jobTitle || 'MEMBER'}
+              <span
+                className="w-full truncate font-bold text-[#003D9B] uppercase"
+                style={{
+                  fontFamily: 'Inter',
+                  fontWeight: 700,
+                  fontSize: '10px',
+                  lineHeight: '20px',
+                  letterSpacing: '1px',
+                  verticalAlign: 'middle',
+                }}
+              >
+                {user?.jobTitle || 'PROJECT MANAGER'}
               </span>
             </div>
 
             {/* Initials Avatar Badge (Always visible matching Figma) */}
             <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#0052CC] text-[14px] font-bold text-white shadow-xs select-none"
-              title={user?.name}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#003D9B] text-[14px] font-bold text-white shadow-xs select-none"
+              title={user?.name || 'Mahmoud Taha'}
             >
-              {initials}
+              {initials || 'MT'}
             </div>
           </>
         )}
