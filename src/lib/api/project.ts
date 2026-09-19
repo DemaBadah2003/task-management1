@@ -62,11 +62,8 @@ export async function createProjectApi(payload: CreateProjectPayload): Promise<a
 }
 
 // 2. دالة جلب المشاريع (مضافة حديثاً لتعمل مع صفحة القائمة والكاردات)
-// 2. دالة جلب المشاريع المعدلة والآمنة
-// 2. دالة جلب المشاريع المعدلة والآمنة
 export async function getProjectsApi(): Promise<Project[]> {
   const token = getSessionToken();
-  console.log('server token exists?', !!token);
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -77,10 +74,22 @@ export async function getProjectsApi(): Promise<Project[]> {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/projects?select=*&order=created_at.desc`, {
+  // محاولة جلب المشاريع من RPC المذكور بالـ Requirement أولاً، ثم الـ Table كاحتيطي
+  let response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_projects`, {
     method: "GET",
     headers,
   });
+
+  if (response.status === 404 || !response.ok) {
+    // إذا لم يتوفر الـ RPC، نستخدم الجدول مباشرة
+    const tableRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/projects?select=*&order=created_at.desc`,
+      { method: "GET", headers }
+    );
+    if (tableRes.ok || response.status === 404) {
+      response = tableRes;
+    }
+  }
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => null);
@@ -89,7 +98,9 @@ export async function getProjectsApi(): Promise<Project[]> {
       errorBody?.msg ||
       errorBody?.error_description ||
       "Failed to fetch projects";
-    throw new ApiError(errorMessage);
+    const err = new ApiError(errorMessage);
+    (err as any).status = response.status;
+    throw err;
   }
 
   const resText = await response.text();
@@ -97,10 +108,9 @@ export async function getProjectsApi(): Promise<Project[]> {
     const data = JSON.parse(resText);
     
     return (data || []).map((item: any) => ({
-      id: item.id,
+      id: String(item.id),
       name: item.name || "Untitled Project",
       description: item.description || "",
-      // معالجة التاريخ لضمان عدم حدوث خطأ في التنسيق لو كان الحقل فارغاً
       createdAt: item.created_at || item.createdAt || new Date().toISOString(),
     }));
   } catch (err) {
