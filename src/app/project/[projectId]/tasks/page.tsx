@@ -6,18 +6,18 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ projectId: string }>;
 }
 
 export default async function ProjectTasksPage({ params }: PageProps) {
-  const { id } = await params;
+  const { projectId } = await params;
 
   return (
     <AuthenticatedLayout>
       <div className="flex flex-col gap-4 max-w-6xl mx-auto p-6">
         <h1 className="text-[24px] font-bold text-[#041B3C]">Tasks</h1>
         <p className="text-[14px] text-[#4F5F7B]">
-          Active Project Tasks (Project ID: {id}).
+          Active Project Tasks (Project ID: {projectId}).
         </p>
         <div className="rounded-2xl bg-white p-6 border border-[#E8EDFF]">
           <span className="text-[14px] font-semibold text-[#041B3C]">

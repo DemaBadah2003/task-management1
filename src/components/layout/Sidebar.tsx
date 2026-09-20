@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/src/lib/utils';
 import { useUser } from '@/src/context/user-context';
+import { useActiveProject } from '@/src/context/project-context';
 
 interface SidebarProps {
   isCollapsed?: boolean;
@@ -19,8 +20,8 @@ export function Sidebar({
   className,
 }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { logout, isLoggingOut } = useUser();
+  const { activeProjectId, activeProjectName } = useActiveProject();
 
   // Accordion state - Opened by default per specification
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
@@ -52,60 +53,62 @@ export function Sidebar({
     await logout();
   };
 
-  const projectLinks = [
-    {
-      name: 'Epics',
-      href: '/project/epics',
-      icon: (
-        <Image
-          src="/icons/Epics.svg"
-          alt="Epics"
-          width={18}
-          height={18}
-          className="h-4.5 w-4.5 shrink-0"
-        />
-      ),
-    },
-    {
-      name: 'Tasks',
-      href: '/project/tasks',
-      icon: (
-        <Image
-          src="/icons/Tasks.svg"
-          alt="Tasks"
-          width={18}
-          height={18}
-          className="h-4.5 w-4.5 shrink-0"
-        />
-      ),
-    },
-    {
-      name: 'Members',
-      href: '/project/members',
-      icon: (
-        <Image
-          src="/icons/Members.svg"
-          alt="Members"
-          width={18}
-          height={18}
-          className="h-4.5 w-4.5 shrink-0"
-        />
-      ),
-    },
-    {
-      name: 'Details',
-      href: '/project/details',
-      icon: (
-        <Image
-          src="/icons/Details.svg"
-          alt="Details"
-          width={18}
-          height={18}
-          className="h-4.5 w-4.5 shrink-0"
-        />
-      ),
-    },
-  ];
+  const projectLinks = activeProjectId
+    ? [
+        {
+          name: 'Tasks',
+          href: `/project/${activeProjectId}/tasks`,
+          icon: (
+            <Image
+              src="/icons/Tasks.svg"
+              alt="Tasks"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5 shrink-0"
+            />
+          ),
+        },
+        {
+          name: 'Members',
+          href: `/project/${activeProjectId}/members`,
+          icon: (
+            <Image
+              src="/icons/Members.svg"
+              alt="Members"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5 shrink-0"
+            />
+          ),
+        },
+        {
+          name: 'Epics',
+          href: `/project/${activeProjectId}/epics`,
+          icon: (
+            <Image
+              src="/icons/Epics.svg"
+              alt="Epics"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5 shrink-0"
+            />
+          ),
+        },
+        {
+          name: 'Details',
+          href: `/project/${activeProjectId}/edit`,
+          icon: (
+            <Image
+              src="/icons/Details.svg"
+              alt="Details"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5 shrink-0"
+            />
+          ),
+        },
+      ]
+    : [];
 
   // Shared typography style matching Figma spec exactly for both "Projects" and "My Statistics"
   const navTextStyle: React.CSSProperties = {
@@ -205,128 +208,134 @@ export function Sidebar({
           </Link>
         </nav>
 
-        {/* Divider + Active Project grouped tightly so the line sits directly above the folder icon */}
-        <div className="flex flex-col gap-3">
-          <div
-            className={cn(
-              'border-t border-[#E8EDFF]',
-              isCollapsed && 'mx-auto w-8'
-            )}
-          />
+        {/* Divider + Active Project Section (Visible only when inside a project route) */}
+        {activeProjectId && (
+          <div className="flex flex-col gap-3">
+            <div
+              className={cn(
+                'border-t border-[#E8EDFF]',
+                isCollapsed && 'mx-auto w-8'
+              )}
+            />
 
-          {/* Section 3: Current Active Project Accordion & Collapsed Floating Popup */}
-          {!isCollapsed ? (
-            /* EXPANDED MODE: Accordion */
-            <div className="flex flex-col overflow-hidden rounded-[12px] border border-[#E8EDFF]">
-              {/* Accordion Header (exact Figma background: #D7E2FF) */}
-              <button
-                type="button"
-                onClick={() => setIsAccordionOpen((prev) => !prev)}
-                className="flex w-full items-center justify-between bg-[#D7E2FF] p-3 text-left transition-colors hover:bg-[#C9DAFF]"
-              >
-                <div className="flex min-w-0 items-center gap-2.5">
+            {/* Section 3: Current Active Project Accordion & Collapsed Floating Popup */}
+            {!isCollapsed ? (
+              /* EXPANDED MODE: Accordion */
+              <div className="flex flex-col overflow-hidden rounded-[12px] border border-[#E8EDFF]">
+                {/* Accordion Header (exact Figma background: #D7E2FF) */}
+                <button
+                  type="button"
+                  onClick={() => setIsAccordionOpen((prev) => !prev)}
+                  className="flex w-full items-center justify-between bg-[#D7E2FF] p-3 text-left transition-colors hover:bg-[#C9DAFF]"
+                >
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <Image
+                      src="/icons/folder.svg"
+                      alt="Active Project"
+                      width={18}
+                      height={18}
+                      className="h-4.5 w-4.5 shrink-0"
+                    />
+                    <span
+                      className="truncate text-[14px] leading-[20px] font-semibold text-[#041B3C]"
+                      title={activeProjectName || undefined}
+                    >
+                      {activeProjectName || 'Active Project'}
+                    </span>
+                  </div>
+                  <svg
+                    className={cn(
+                      'h-4 w-4 shrink-0 text-[#041B3C] transition-transform duration-200',
+                      isAccordionOpen ? 'rotate-180' : 'rotate-0'
+                    )}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {/* Sub-links container */}
+                {isAccordionOpen && (
+                  <div className="flex flex-col gap-[4px] bg-white p-[8px]">
+                    {projectLinks.map((link) => {
+                      const isSelected = pathname === link.href;
+                      return (
+                        <Link
+                          key={link.name}
+                          href={link.href}
+                          className={cn(
+                            'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors',
+                            isSelected ? 'bg-[#F1F3FF]' : 'hover:bg-[#F1F3FF]/60'
+                          )}
+                        >
+                          {link.icon}
+                          <span>{link.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* COLLAPSED MODE: Project Icon with Floating Popup Menu */
+              <div className="relative flex justify-center" ref={popupRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsPopupOpen((prev) => !prev)}
+                  aria-label="Active project links popup"
+                  className={cn(
+                    'flex h-11 w-11 items-center justify-center rounded-xl border border-[#E8EDFF] bg-[#D7E2FF] text-[#041B3C] transition-all hover:bg-[#C9DAFF]',
+                    isPopupOpen && 'bg-[#C9DAFF] ring-2 ring-[#0052CC]/50'
+                  )}
+                  title={activeProjectName || 'Active Project Links'}
+                >
                   <Image
                     src="/icons/folder.svg"
                     alt="Active Project"
-                    width={18}
-                    height={18}
-                    className="h-4.5 w-4.5 shrink-0"
+                    width={20}
+                    height={20}
+                    className="h-5 w-5"
                   />
-                  <span className="truncate text-[14px] leading-[20px] font-semibold text-[#041B3C]">
-                    Active Project Na...
-                  </span>
-                </div>
-                <svg
-                  className={cn(
-                    'h-4 w-4 shrink-0 text-[#041B3C] transition-transform duration-200',
-                    isAccordionOpen ? 'rotate-180' : 'rotate-0'
-                  )}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
+                </button>
 
-              {/* Sub-links container: text stays the SAME weight (font-medium) whether
-                 selected or not — only the background pill (#F1F3FF) indicates selection */}
-              {isAccordionOpen && (
-                <div className="flex flex-col gap-[4px] bg-white p-[8px]">
-                  {projectLinks.map((link) => {
-                    const isSelected = pathname === link.href;
-                    return (
-                      <Link
-                        key={link.name}
-                        href={link.href}
-                        className={cn(
-                          'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors',
-                          isSelected ? 'bg-[#F1F3FF]' : 'hover:bg-[#F1F3FF]/60'
-                        )}
-                      >
-                        {link.icon}
-                        <span>{link.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          ) : (
-            /* COLLAPSED MODE: Project Icon with Floating Popup Menu */
-            <div className="relative flex justify-center" ref={popupRef}>
-              <button
-                type="button"
-                onClick={() => setIsPopupOpen((prev) => !prev)}
-                aria-label="Active project links popup"
-                className={cn(
-                  'flex h-11 w-11 items-center justify-center rounded-xl border border-[#E8EDFF] bg-[#D7E2FF] text-[#041B3C] transition-all hover:bg-[#C9DAFF]',
-                  isPopupOpen && 'bg-[#C9DAFF] ring-2 ring-[#0052CC]/50'
+                {/* Floating Popover Menu */}
+                {isPopupOpen && (
+                  <div className="animate-in fade-in zoom-in-95 absolute top-0 left-[64px] z-50 flex w-[246px] flex-col gap-[4px] rounded-l-[12px] rounded-r-[8px] border border-[#E8EDFF] bg-[#D7E2FF] p-[8px] shadow-xl duration-150">
+                    <div className="px-3 py-1.5 text-xs font-bold text-[#041B3C] truncate border-b border-[#E8EDFF]/60 mb-1">
+                      {activeProjectName}
+                    </div>
+                    {projectLinks.map((link) => {
+                      const isSelected = pathname === link.href;
+                      return (
+                        <Link
+                          key={link.name}
+                          href={link.href}
+                          onClick={() => setIsPopupOpen(false)}
+                          className={cn(
+                            'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors',
+                            isSelected
+                              ? 'bg-white shadow-2xs'
+                              : 'hover:bg-white/60'
+                          )}
+                        >
+                          {link.icon}
+                          <span>{link.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 )}
-                title="Active Project Links"
-              >
-                <Image
-                  src="/icons/folder.svg"
-                  alt="Active Project"
-                  width={20}
-                  height={20}
-                  className="h-5 w-5"
-                />
-              </button>
-
-              {/* Floating Popover Menu: text stays the SAME weight (font-medium) whether
-                 selected or not — only the background pill (white) indicates selection */}
-              {isPopupOpen && (
-                <div className="animate-in fade-in zoom-in-95 absolute top-0 left-[64px] z-50 flex w-[246px] flex-col gap-[4px] rounded-l-[12px] rounded-r-[8px] border border-[#E8EDFF] bg-[#D7E2FF] p-[8px] shadow-xl duration-150">
-                  {projectLinks.map((link) => {
-                    const isSelected = pathname === link.href;
-                    return (
-                      <Link
-                        key={link.name}
-                        href={link.href}
-                        onClick={() => setIsPopupOpen(false)}
-                        className={cn(
-                          'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors',
-                          isSelected
-                            ? 'bg-white shadow-2xs'
-                            : 'hover:bg-white/60'
-                        )}
-                      >
-                        {link.icon}
-                        <span>{link.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Bottom Section: Collapse Toggle & Logout Buttons */}

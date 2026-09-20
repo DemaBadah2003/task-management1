@@ -3,29 +3,25 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useUser } from '@/src/context/user-context';
+import { useActiveProject } from '@/src/context/project-context';
 
 interface MobileNavigationProps {
   isOpen: boolean;
   onClose: () => void;
   onOpen?: () => void;
-  hasActiveProject?: boolean;
 }
 
 export function MobileNavigation({
   isOpen,
   onClose,
-  hasActiveProject = true,
 }: MobileNavigationProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { logout, isLoggingOut } = useUser();
+  const { activeProjectId, activeProjectName } = useActiveProject();
 
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
-
-  const isFormPage =
-    pathname.includes('/project/add') || pathname.includes('/project/edit');
 
   const navTextStyle: React.CSSProperties = {
     fontFamily: 'Inter',
@@ -41,60 +37,67 @@ export function MobileNavigation({
     await logout();
   };
 
-  const projectSubLinks = [
-    {
-      name: 'Epics',
-      href: '/project/epics',
-      icon: (
-        <Image
-          src="/icons/Epics.svg"
-          alt="Epics"
-          width={18}
-          height={18}
-          className="h-4.5 w-4.5 shrink-0"
-        />
-      ),
-    },
-    {
-      name: 'Tasks',
-      href: '/project/tasks',
-      icon: (
-        <Image
-          src="/icons/Tasks.svg"
-          alt="Tasks"
-          width={18}
-          height={18}
-          className="h-4.5 w-4.5 shrink-0"
-        />
-      ),
-    },
-    {
-      name: 'Members',
-      href: '/project/members',
-      icon: (
-        <Image
-          src="/icons/Members.svg"
-          alt="Members"
-          width={18}
-          height={18}
-          className="h-4.5 w-4.5 shrink-0"
-        />
-      ),
-    },
-    {
-      name: 'Details',
-      href: '/project/details',
-      icon: (
-        <Image
-          src="/icons/Details.svg"
-          alt="Details"
-          width={18}
-          height={18}
-          className="h-4.5 w-4.5 shrink-0"
-        />
-      ),
-    },
-  ];
+  const projectSubLinks = activeProjectId
+    ? [
+        {
+          name: 'Tasks',
+          href: `/project/${activeProjectId}/tasks`,
+          icon: (
+            <Image
+              src="/icons/Tasks.svg"
+              alt="Tasks"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5 shrink-0"
+            />
+          ),
+        },
+        {
+          name: 'Members',
+          href: `/project/${activeProjectId}/members`,
+          icon: (
+            <Image
+              src="/icons/Members.svg"
+              alt="Members"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5 shrink-0"
+            />
+          ),
+        },
+        {
+          name: 'Epics',
+          href: `/project/${activeProjectId}/epics`,
+          icon: (
+            <Image
+              src="/icons/Epics.svg"
+              alt="Epics"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5 shrink-0"
+            />
+          ),
+        },
+        {
+          name: 'Details',
+          href: `/project/${activeProjectId}/edit`,
+          icon: (
+            <Image
+              src="/icons/Details.svg"
+              alt="Details"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5 shrink-0"
+            />
+          ),
+        },
+      ]
+    : [];
+
+  const epicsHref = activeProjectId ? `/project/${activeProjectId}/epics` : '/project';
+  const tasksHref = activeProjectId ? `/project/${activeProjectId}/tasks` : '/project';
+  const membersHref = activeProjectId ? `/project/${activeProjectId}/members` : '/project';
+  const detailsHref = activeProjectId ? `/project/${activeProjectId}/edit` : '/project';
 
   return (
     <>
@@ -194,71 +197,73 @@ export function MobileNavigation({
                 </Link>
               </nav>
 
-              {/* Divider between nav links and Active Project accordion */}
-              {hasActiveProject && (
-                <div className="-mt-3 border-t border-[#E8EDFF]" />
-              )}
+              {/* Active Project Accordion inside Drawer (Visible when inside a project) */}
+              {activeProjectId && (
+                <>
+                  <div className="-mt-3 border-t border-[#E8EDFF]" />
 
-              {/* Active Project Accordion */}
-              {hasActiveProject && (
-                <div className="flex flex-col overflow-hidden rounded-[12px] border border-[#E8EDFF]">
-                  <button
-                    type="button"
-                    onClick={() => setIsAccordionOpen((prev) => !prev)}
-                    className="flex w-full items-center justify-between bg-[#D7E2FF] p-3 text-left transition-colors hover:bg-[#C9DAFF]"
-                  >
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <Image
-                        src="/icons/folder.svg"
-                        alt="Active Project"
-                        width={18}
-                        height={18}
-                        className="h-4.5 w-4.5 shrink-0"
-                      />
-                      <span className="truncate text-[14px] leading-[20px] font-semibold text-[#041B3C]">
-                        Active Project Na...
-                      </span>
-                    </div>
-                    <svg
-                      className={`h-4 w-4 text-[#041B3C] transition-transform ${
-                        isAccordionOpen ? 'rotate-180' : ''
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  <div className="flex flex-col overflow-hidden rounded-[12px] border border-[#E8EDFF]">
+                    <button
+                      type="button"
+                      onClick={() => setIsAccordionOpen((prev) => !prev)}
+                      className="flex w-full items-center justify-between bg-[#D7E2FF] p-3 text-left transition-colors hover:bg-[#C9DAFF]"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <Image
+                          src="/icons/folder.svg"
+                          alt="Active Project"
+                          width={18}
+                          height={18}
+                          className="h-4.5 w-4.5 shrink-0"
+                        />
+                        <span
+                          className="truncate text-[14px] leading-[20px] font-semibold text-[#041B3C]"
+                          title={activeProjectName || undefined}
+                        >
+                          {activeProjectName || 'Active Project'}
+                        </span>
+                      </div>
+                      <svg
+                        className={`h-4 w-4 text-[#041B3C] transition-transform ${
+                          isAccordionOpen ? 'rotate-180' : ''
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
 
-                  {isAccordionOpen && (
-                    <div className="flex flex-col gap-[4px] bg-white p-[8px]">
-                      {projectSubLinks.map((link) => {
-                        const isSelected = pathname === link.href;
-                        return (
-                          <Link
-                            key={link.name}
-                            href={link.href}
-                            onClick={onClose}
-                            className={`flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors ${
-                              isSelected
-                                ? 'bg-[#F1F3FF]'
-                                : 'hover:bg-[#F1F3FF]/60'
-                            }`}
-                          >
-                            {link.icon}
-                            <span>{link.name}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                    {isAccordionOpen && (
+                      <div className="flex flex-col gap-[4px] bg-white p-[8px]">
+                        {projectSubLinks.map((link) => {
+                          const isSelected = pathname === link.href;
+                          return (
+                            <Link
+                              key={link.name}
+                              href={link.href}
+                              onClick={onClose}
+                              className={`flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors ${
+                                isSelected
+                                  ? 'bg-[#F1F3FF]'
+                                  : 'hover:bg-[#F1F3FF]/60'
+                              }`}
+                            >
+                              {link.icon}
+                              <span>{link.name}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
 
@@ -307,103 +312,53 @@ export function MobileNavigation({
         </div>
       )}
 
-      {/* 2. Mobile Bottom Navigation Bar: Uses /icons/project.svg matching Figma Screenshots 1 & 2 */}
+      {/* 2. Mobile Bottom Navigation Bar: Displays ALL required navigation links per Ticket Requirement 7 */}
       <nav className="fixed right-0 bottom-0 left-0 z-40 flex h-[64px] w-full items-center justify-center border-t border-[#E8EDFF] bg-[#F1F3FF] px-2 shadow-lg md:hidden">
-        {!isFormPage && hasActiveProject ? (
-          <div className="flex w-full items-center justify-around">
-            <Link
-              href="/project/epics"
-              className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
-                pathname === '/project/epics'
-                  ? 'text-[#003D9B]'
-                  : 'text-[#4F5F7B]'
-              }`}
-            >
-              <Image
-                src="/icons/Epics.svg"
-                alt="Epics"
-                width={18}
-                height={18}
-                className="h-4.5 w-4.5"
-              />
-              <span>Epics</span>
-            </Link>
+        <div className="flex w-full items-center justify-around">
+          {/* Epics */}
+          <Link
+            href={epicsHref}
+            className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
+              activeProjectId && pathname === `/project/${activeProjectId}/epics`
+                ? 'text-[#003D9B]'
+                : 'text-[#4F5F7B]'
+            }`}
+          >
+            <Image
+              src="/icons/Epics.svg"
+              alt="Epics"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5"
+            />
+            <span>Epics</span>
+          </Link>
 
-            <Link
-              href="/project/tasks"
-              className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
-                pathname === '/project/tasks'
-                  ? 'text-[#003D9B]'
-                  : 'text-[#4F5F7B]'
-              }`}
-            >
-              <Image
-                src="/icons/Tasks.svg"
-                alt="Tasks"
-                width={18}
-                height={18}
-                className="h-4.5 w-4.5"
-              />
-              <span>Tasks</span>
-            </Link>
+          {/* Tasks */}
+          <Link
+            href={tasksHref}
+            className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
+              activeProjectId && pathname === `/project/${activeProjectId}/tasks`
+                ? 'text-[#003D9B]'
+                : 'text-[#4F5F7B]'
+            }`}
+          >
+            <Image
+              src="/icons/Tasks.svg"
+              alt="Tasks"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5"
+            />
+            <span>Tasks</span>
+          </Link>
 
-            <Link
-              href="/project"
-              className={`flex flex-col items-center gap-1 text-[10px] font-bold transition-colors ${
-                pathname === '/project' ? 'text-[#003D9B]' : 'text-[#041B3C]'
-              }`}
-            >
-              <Image
-                src="/icons/project.svg"
-                alt="Projects"
-                width={20}
-                height={20}
-                className="h-5 w-5"
-              />
-              <span>Projects</span>
-            </Link>
-
-            <Link
-              href="/project/members"
-              className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
-                pathname === '/project/members'
-                  ? 'text-[#003D9B]'
-                  : 'text-[#4F5F7B]'
-              }`}
-            >
-              <Image
-                src="/icons/Members.svg"
-                alt="Members"
-                width={18}
-                height={18}
-                className="h-4.5 w-4.5"
-              />
-              <span>Members</span>
-            </Link>
-
-            <Link
-              href="/project/details"
-              className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
-                pathname === '/project/details'
-                  ? 'text-[#003D9B]'
-                  : 'text-[#4F5F7B]'
-              }`}
-            >
-              <Image
-                src="/icons/Details.svg"
-                alt="Details"
-                width={18}
-                height={18}
-                className="h-4.5 w-4.5"
-              />
-              <span>Details</span>
-            </Link>
-          </div>
-        ) : (
-          /* Single Centered Projects item using /icons/project.svg */
+          {/* Projects (Center) */}
           <Link
             href="/project"
-            className="flex flex-col items-center justify-center gap-1 text-[11px] font-bold text-[#041B3CB2]"
+            className={`flex flex-col items-center gap-1 text-[10px] font-bold transition-colors ${
+              pathname === '/project' ? 'text-[#003D9B]' : 'text-[#041B3C]'
+            }`}
           >
             <Image
               src="/icons/project.svg"
@@ -412,9 +367,47 @@ export function MobileNavigation({
               height={20}
               className="h-5 w-5"
             />
-            <span className="text-[#041B3CB2]">Projects</span>
+            <span>Projects</span>
           </Link>
-        )}
+
+          {/* Members */}
+          <Link
+            href={membersHref}
+            className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
+              activeProjectId && pathname === `/project/${activeProjectId}/members`
+                ? 'text-[#003D9B]'
+                : 'text-[#4F5F7B]'
+            }`}
+          >
+            <Image
+              src="/icons/Members.svg"
+              alt="Members"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5"
+            />
+            <span>Members</span>
+          </Link>
+
+          {/* Details */}
+          <Link
+            href={detailsHref}
+            className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
+              activeProjectId && pathname === `/project/${activeProjectId}/edit`
+                ? 'text-[#003D9B]'
+                : 'text-[#4F5F7B]'
+            }`}
+          >
+            <Image
+              src="/icons/Details.svg"
+              alt="Details"
+              width={18}
+              height={18}
+              className="h-4.5 w-4.5"
+            />
+            <span>Details</span>
+          </Link>
+        </div>
       </nav>
     </>
   );

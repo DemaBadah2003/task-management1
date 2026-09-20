@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import type { Project } from '@/src/types/project';
+import { useActiveProject } from '@/src/context/project-context';
 
 interface ProjectCardProps {
   project: Project;
@@ -33,24 +34,35 @@ function formatDate(dateString: string): string {
 
 export function ProjectCard({ project }: ProjectCardProps) {
   const router = useRouter();
+  const { setActiveProject } = useActiveProject();
 
   const handleCardClick = () => {
+    setActiveProject(project);
     router.push(`/project/${project.id}/epics`);
   };
 
   const handleEpicsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setActiveProject(project);
     router.push(`/project/${project.id}/epics`);
   };
 
   const handleTasksClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setActiveProject(project);
     router.push(`/project/${project.id}/tasks`);
   };
 
   const handleMembersClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setActiveProject(project);
     router.push(`/project/${project.id}/members`);
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveProject(project);
+    router.push(`/project/${project.id}/edit`);
   };
 
   return (
@@ -59,9 +71,27 @@ export function ProjectCard({ project }: ProjectCardProps) {
       className="flex min-h-[220px] w-full min-w-0 cursor-pointer flex-col gap-[var(--spacing-card-gap)] overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-card-border)] bg-white p-6 transition-shadow hover:shadow-md"
     >
       <div className="flex min-w-0 flex-col gap-2">
-        <h3 className="line-clamp-2 text-[length:var(--text-card-title)] leading-[var(--text-card-title--line-height)] font-[var(--text-card-title--font-weight)] break-words text-[var(--color-slate-900)]">
-          {project.name}
-        </h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="line-clamp-2 text-[length:var(--text-card-title)] leading-[var(--text-card-title--line-height)] font-[var(--text-card-title--font-weight)] break-words text-[var(--color-slate-900)]">
+            {project.name}
+          </h3>
+          <button
+            type="button"
+            onClick={handleEditClick}
+            aria-label={`Edit ${project.name}`}
+            className="flex shrink-0 items-center gap-1 rounded-[4px] border border-[#E8EDFF] bg-[#F1F3FF] px-2.5 py-1 text-[12px] font-semibold text-[#003D9B] transition-colors hover:bg-[#D7E2FF] focus:outline-none"
+            title="Edit Project"
+          >
+            <span
+              className="icon-primary h-3.5 w-3.5 shrink-0"
+              style={{
+                maskImage: 'url(/icons/Details.svg)',
+                WebkitMaskImage: 'url(/icons/Details.svg)',
+              }}
+            />
+            Edit
+          </button>
+        </div>
         <p className="line-clamp-2 text-[length:var(--text-card-desc)] leading-[var(--text-card-desc--line-height)] font-[var(--text-card-desc--font-weight)] break-words text-[var(--color-slate-500)]">
           {project.description}
         </p>

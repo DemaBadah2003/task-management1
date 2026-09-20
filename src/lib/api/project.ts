@@ -118,7 +118,54 @@ export async function getProjectsApi(): Promise<Project[]> {
     return [];
   }
 }
-// 3. دالة تحديث المشروع
+
+// 3. دالة جلب مشروع محدد بواسطة الـ ID
+export async function getProjectByIdApi(id: string): Promise<Project> {
+  const token = getSessionToken();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "apikey": SUPABASE_ANON_KEY,
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/projects?id=eq.${id}&select=*`,
+      { method: "GET", headers }
+    );
+
+    if (response.ok) {
+      const resText = await response.text();
+      const data = JSON.parse(resText);
+      if (Array.isArray(data) && data.length > 0) {
+        const item = data[0];
+        return {
+          id: String(item.id),
+          name: item.name || "Untitled Project",
+          description: item.description || "",
+          createdAt: item.created_at || item.createdAt || new Date().toISOString(),
+        };
+      }
+    }
+  } catch {
+    // Fall back to getProjectsApi list below
+  }
+
+  // Fallback: search in getProjectsApi
+  const projects = await getProjectsApi();
+  const found = projects.find((p) => String(p.id) === String(id));
+  if (found) {
+    return found;
+  }
+
+  throw new ApiError("Project not found");
+}
+
+// 4. دالة تحديث المشروع
 export async function updateProjectApi(payload: UpdateProjectPayload): Promise<any> {
   const token = getSessionToken();
 
@@ -150,7 +197,7 @@ export async function updateProjectApi(payload: UpdateProjectPayload): Promise<a
       errorBody?.message ||
       errorBody?.msg ||
       errorBody?.error_description ||
-      "Failed To Update Project, Try Again Later";
+      "Failed to update project";
     throw new ApiError(errorMessage);
   }
 

@@ -7,12 +7,12 @@ export const metadata: Metadata = {
   description: 'Edit project details in Taskly.',
 };
 
-export default async function EditProjectByIdPage({
+export default async function EditProjectByProjectIdPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ projectId: string }>;
 }) {
-  const { id } = await params;
+  const { projectId } = await params;
 
   return (
     <AuthenticatedLayout>
@@ -36,7 +36,7 @@ export default async function EditProjectByIdPage({
 
         {/* Main Content: Form Container */}
         <div className="sm:mt-2">
-          <EditProjectForm initialData={{ id }} />
+          <EditProjectForm projectId={projectId} />
         </div>
       </div>
     </AuthenticatedLayout>
