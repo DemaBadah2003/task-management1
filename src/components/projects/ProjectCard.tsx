@@ -79,7 +79,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             type="button"
             onClick={handleEditClick}
             aria-label={`Edit ${project.name}`}
-            className="flex shrink-0 items-center gap-1 rounded-[4px] border border-[#E8EDFF] bg-[#F1F3FF] px-2.5 py-1 text-[12px] font-semibold text-[#003D9B] transition-colors hover:bg-[#D7E2FF] focus:outline-none"
+            className="flex shrink-0 items-center gap-1 rounded-[4px] border border-card-border bg-surface-low px-2.5 py-1 text-[12px] font-semibold text-primary transition-colors hover:bg-input-bg focus:outline-none"
             title="Edit Project"
           >
             <span

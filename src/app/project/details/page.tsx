@@ -12,12 +12,12 @@ export default function DetailsPage() {
       <div className="flex flex-col gap-4 max-w-6xl mx-auto">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[24px] font-bold text-[#041B3C]">Project Details</h1>
-            <p className="text-[14px] text-[#4F5F7B]">Settings and metadata for active project.</p>
+            <h1 className="text-[24px] font-bold text-slate-900">Project Details</h1>
+            <p className="text-[14px] text-slate-600">Settings and metadata for active project.</p>
           </div>
           <Link
             href="/project/edit"
-            className="inline-flex items-center gap-2 rounded-[4px] bg-[#003D9B] px-4 py-2 text-[14px] font-bold text-white shadow-xs transition-all hover:bg-[#002B70]"
+            className="inline-flex items-center gap-2 rounded-[4px] bg-primary px-4 py-2 text-[14px] font-bold text-white shadow-xs transition-all hover:bg-primary-dark-hover"
           >
             <svg
               className="h-4 w-4"
@@ -36,8 +36,8 @@ export default function DetailsPage() {
           </Link>
         </div>
 
-        <div className="rounded-2xl bg-white p-6 border border-[#E8EDFF]">
-          <span className="text-[14px] font-semibold text-[#041B3C]">Project details placeholder.</span>
+        <div className="rounded-2xl bg-white p-6 border border-card-border">
+          <span className="text-[14px] font-semibold text-slate-900">Project details placeholder.</span>
         </div>
       </div>
     </AuthenticatedLayout>

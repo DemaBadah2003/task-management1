@@ -41,25 +41,20 @@ export function CreateProjectForm() {
         description: values.description,
       });
 
-      // Clear form on success
       reset({ title: '', description: '' });
-
-      // تحديث بيانات الصفحة والانتقال لصفحة المشاريع لتظهر الكاردات فوراً
       router.refresh();
       router.push('/project');
     } catch (err) {
-      // Log the real error for debugging; show a generic message to the user
       console.error('Create project error:', err);
-
       setApiError('Failed To Add New Project, Try Again Later');
     }
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[342px] flex-col gap-6 sm:max-w-[672px] sm:gap-0 sm:overflow-hidden sm:rounded-[8px] sm:border sm:border-[#E8EDFF] sm:bg-white sm:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
-      {/* Form Content Area: No card padding on mobile, 56px inset padding on desktop */}
+    <div className="mx-auto flex w-full max-w-[342px] flex-col gap-6 sm:max-w-[672px] sm:gap-0 sm:overflow-hidden sm:rounded-[8px] sm:border sm:border-card-border sm:bg-white sm:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.05)]">
+      {/* Form Content Area */}
       <div className="flex flex-col gap-6 sm:px-[56px] sm:py-[48px]">
-        {/* Card Header: Icon hidden on mobile, visible on sm+ */}
+        {/* Card Header */}
         <div className="flex items-center gap-3.5">
           <Image
             src="/icons/Overlay.svg"
@@ -70,10 +65,10 @@ export function CreateProjectForm() {
             priority
           />
           <div className="flex flex-col">
-            <h2 className="text-[24px] leading-[32px] font-semibold tracking-[0px] text-[#041B3C]">
+            <h2 className="text-[24px] leading-[32px] font-semibold tracking-[0px] text-slate-900">
               Initialize New Project
             </h2>
-            <p className="mt-0.5 text-[14px] leading-[20px] font-normal tracking-[0px] text-[#4F5F7B]">
+            <p className="mt-0.5 text-[14px] leading-[20px] font-normal tracking-[0px] text-slate-600">
               Define the scope and foundational details of your project.
             </p>
           </div>
@@ -88,9 +83,9 @@ export function CreateProjectForm() {
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="title"
-              className="text-[11px] leading-[16.5px] font-bold tracking-[0.55px] text-[#4F5F7B] uppercase"
+              className="text-[11px] leading-[16.5px] font-bold tracking-[0.55px] text-slate-600 uppercase"
             >
-              PROJECT TITLE <span className="text-[#BA1A1A]">*</span>
+              PROJECT TITLE <span className="text-error">*</span>
             </label>
             <input
               id="title"
@@ -98,14 +93,15 @@ export function CreateProjectForm() {
               placeholder="Enter project title..."
               aria-invalid={Boolean(errors.title)}
               className={cn(
-                'w-full rounded-[8px] bg-[#D7E2FF] p-4 sm:rounded-[4px] sm:px-[16px] sm:py-[12px]',
-                'text-[16px] leading-[24px] font-normal text-[#041B3C]',
-                'border-none outline-none placeholder:text-[#4F5F7B80]'
+                'w-full rounded-[8px] bg-input-bg p-4 sm:rounded-[4px] sm:px-[16px] sm:py-[12px]',
+                'text-[16px] leading-[24px] font-normal text-slate-900',
+                'border-none outline-none placeholder:text-surface-medium/50',
+                errors.title && 'ring-2 ring-error'
               )}
               {...register('title')}
             />
             {errors.title && (
-              <div className="mt-1 flex items-center gap-1.5 text-[12px] leading-[18px] font-medium text-[#BA1A1A]">
+              <div className="mt-1 flex items-center gap-1.5 text-[12px] leading-[18px] font-medium text-error">
                 <svg
                   className="h-4 w-4 shrink-0"
                   fill="none"
@@ -128,7 +124,7 @@ export function CreateProjectForm() {
           <div className="flex flex-col gap-1.5">
             <label
               htmlFor="description"
-              className="text-[11px] leading-[16.5px] font-bold tracking-[0.55px] text-[#4F5F7B] uppercase"
+              className="text-[11px] leading-[16.5px] font-bold tracking-[0.55px] text-slate-600 uppercase"
             >
               DESCRIPTION
             </label>
@@ -138,16 +134,17 @@ export function CreateProjectForm() {
               placeholder="Provide a high-level overview of the project's architectural objectives and key milestones..."
               aria-invalid={Boolean(errors.description)}
               className={cn(
-                'w-full rounded-[8px] bg-[#D7E2FF] px-4 pt-4 pb-[88px] sm:rounded-[4px] sm:px-[16px] sm:pt-[12px] sm:pb-[84px]',
-                'text-[16px] leading-[24px] font-normal text-[#041B3C]',
-                'resize-none border-none outline-none placeholder:text-[#4F5F7B80]'
+                'w-full rounded-[8px] bg-input-bg px-4 pt-4 pb-[88px] sm:rounded-[4px] sm:px-[16px] sm:pt-[12px] sm:pb-[84px]',
+                'text-[16px] leading-[24px] font-normal text-slate-900',
+                'resize-none border-none outline-none placeholder:text-surface-medium/50',
+                errors.description && 'ring-2 ring-error'
               )}
               {...register('description')}
             />
             {/* Character counter */}
             <div className="mt-0.5 flex items-center justify-between">
               {errors.description ? (
-                <div className="flex items-center gap-1.5 text-[12px] leading-[18px] font-medium text-[#BA1A1A]">
+                <div className="flex items-center gap-1.5 text-[12px] leading-[18px] font-medium text-error">
                   <svg
                     className="h-4 w-4 shrink-0"
                     fill="none"
@@ -166,23 +163,23 @@ export function CreateProjectForm() {
               ) : (
                 <div />
               )}
-              <span className="text-[11px] leading-[16.5px] font-medium tracking-[0px] text-[#4F5F7B]">
+              <span className="text-[11px] leading-[16.5px] font-medium tracking-[0px] text-slate-600">
                 {descriptionValue.length} / 500
                 <span className="hidden sm:inline"> characters</span>
               </span>
             </div>
           </div>
 
-          {/* Action Buttons: Exact Typography & Shadows matching Figma */}
+          {/* Action Buttons */}
           <div className="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="submit"
               disabled={isSubmitting}
               className={cn(
-                'order-1 inline-flex h-[56px] w-full items-center justify-center rounded-[8px] bg-[#003D9B] px-6 py-2.5 sm:order-2 sm:h-[44px] sm:w-auto sm:min-w-[160px] sm:rounded-[4px]',
+                'order-1 inline-flex h-[56px] w-full items-center justify-center rounded-[8px] bg-primary px-6 py-2.5 sm:order-2 sm:h-[44px] sm:w-auto sm:min-w-[160px] sm:rounded-[4px]',
                 'text-center text-[16px] leading-[24px] font-bold tracking-[0px] text-white sm:text-[14px] sm:leading-[20px]',
                 'shadow-[0px_4px_6px_-4px_rgba(0,0,0,0.1),0px_10px_15px_-3px_rgba(0,0,0,0.1)] sm:shadow-[0px_4px_6px_-4px_rgba(0,61,155,0.2),0px_10px_15px_-3px_rgba(0,61,155,0.2)]',
-                'transition-all hover:bg-[#002B70] active:scale-[0.99]',
+                'transition-all hover:bg-primary-dark-hover active:scale-[0.99]',
                 'disabled:cursor-not-allowed disabled:opacity-50'
               )}
             >
@@ -217,29 +214,29 @@ export function CreateProjectForm() {
             <button
               type="button"
               onClick={() => router.push('/project')}
-              className="order-2 w-full py-2 text-center text-[16px] leading-[24px] font-medium tracking-[0px] text-[#003D9B] transition-colors hover:text-[#041B3C] focus:outline-none sm:order-1 sm:w-auto sm:py-0 sm:text-[14px] sm:leading-[20px] sm:font-bold sm:text-[#4F5F7B]"
+              className="order-2 w-full py-2 text-center text-[16px] leading-[24px] font-medium tracking-[0px] text-primary transition-colors hover:text-slate-900 focus:outline-none sm:order-1 sm:w-auto sm:py-0 sm:text-[14px] sm:leading-[20px] sm:font-bold sm:text-slate-600"
             >
               Back
             </button>
           </div>
 
-          {/* Bottom Form-level API Error message (matches Figma placement below the buttons) */}
+          {/* Form-level API Error message */}
           {apiError && (
             <p
               role="alert"
-              className="text-center text-[13px] font-medium text-[#BA1A1A]"
+              className="text-center text-[13px] font-medium text-error"
             >
               {apiError}
             </p>
           )}
         </form>
 
-        {/* Mobile Pro Tip Standalone Card sitting on page background (Fill 342px x Hug 106px, Radius 8px, Padding 24px, #F1F3FF, NO Icon) */}
-        <div className="mt-2 flex w-full flex-col gap-1 rounded-[8px] bg-[#F1F3FF] p-[24px] text-left sm:hidden">
-          <span className="text-[12px] leading-[19.5px] font-bold text-[#4F5F7B]">
+        {/* Mobile Pro Tip Card */}
+        <div className="mt-2 flex w-full flex-col gap-1 rounded-[8px] bg-surface-low p-[24px] text-left sm:hidden">
+          <span className="text-[12px] leading-[19.5px] font-bold text-slate-600">
             Pro Tip
           </span>
-          <p className="text-[12px] leading-[18px] font-normal text-[#4F5F7B]">
+          <p className="text-[12px] leading-[18px] font-normal text-slate-600">
             You can invite project members and assign epics immediately after
             the initial creation process.
           </p>
@@ -247,7 +244,7 @@ export function CreateProjectForm() {
       </div>
 
       {/* Desktop Pro Tip Footer Section */}
-      <div className="hidden w-full items-center gap-3 border-t border-[#E8EDFF] bg-[#F1F3FF] p-[24px] sm:flex">
+      <div className="hidden w-full items-center gap-3 border-t border-card-border bg-surface-low p-[24px] sm:flex">
         <Image
           src="/icons/lamp.svg"
           alt="Pro Tip"
@@ -255,9 +252,9 @@ export function CreateProjectForm() {
           height={16}
           className="h-4 w-4 shrink-0"
         />
-        <p className="text-[12px] leading-[19.5px] text-[#041B3C]">
-          <span className="font-bold text-[#4F5F7B]">Pro Tip: </span>
-          <span className="font-normal text-[#4F5F7B]">
+        <p className="text-[12px] leading-[19.5px] text-slate-900">
+          <span className="font-bold text-slate-600">Pro Tip: </span>
+          <span className="font-normal text-slate-600">
             You can invite project members and assign epics immediately after
             the initial creation process.
           </span>

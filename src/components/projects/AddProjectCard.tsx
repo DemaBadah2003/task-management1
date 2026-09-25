@@ -26,7 +26,7 @@ export function AddProjectCard() {
       href="/project/add"
       className="hidden min-h-[220px] w-full min-w-0 flex-col items-center justify-center gap-4 rounded-[var(--radius-card)] border border-[var(--color-card-border)] bg-white text-[var(--color-slate-900)] transition-shadow hover:shadow-md md:flex"
     >
-      <span className="flex h-[60px] w-[60px] items-center justify-center rounded-[16px] bg-[#F1F3FF] text-[var(--color-primary)]">
+      <span className="flex h-[60px] w-[60px] items-center justify-center rounded-[16px] bg-surface-low text-[var(--color-primary)]">
         <CirclePlusIcon />
       </span>
 

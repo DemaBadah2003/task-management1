@@ -15,13 +15,13 @@ export default function AddProjectPage() {
         <div className="hidden flex-col gap-2 sm:flex">
           {/* Plain Text Breadcrumbs */}
           <div className="flex items-center gap-2 text-[12px] leading-[16px] font-bold tracking-[1.2px] uppercase">
-            <span className="text-[#4F5F7B]">PROJECTS</span>
-            <span className="font-normal text-[#4F5F7B]">›</span>
-            <span className="text-[#003D9B]">ADD NEW PROJECT</span>
+            <span className="text-slate-600">PROJECTS</span>
+            <span className="font-normal text-slate-600">›</span>
+            <span className="text-primary">ADD NEW PROJECT</span>
           </div>
 
           {/* Page Heading */}
-          <h1 className="text-[36px] leading-[40px] font-semibold tracking-[-0.9px] text-[#041B3C]">
+          <h1 className="text-[36px] leading-[40px] font-semibold tracking-[-0.9px] text-slate-900">
             Add New Project
           </h1>
         </div>

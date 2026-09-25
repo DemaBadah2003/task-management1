@@ -14,6 +14,18 @@ const NAME_REGEX = /^\p{L}+(?: \p{L}+)*$/u;
  */
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,64}$/;
 
+/** Shared password rules for Sign Up and Reset Password. */
+export const passwordFieldSchema = z
+  .string()
+  .min(1, "Password is required.")
+  .min(8, "Password must be between 8 and 64 characters.")
+  .max(64, "Password must be between 8 and 64 characters.")
+  .refine((val) => !/\s/.test(val), "Password must not contain whitespace.")
+  .regex(
+    PASSWORD_REGEX,
+    "Password must include at least one uppercase letter, one lowercase letter, one digit, and one special character.",
+  );
+
 export const signUpSchema = z
   .object({
     name: z
@@ -29,16 +41,7 @@ export const signUpSchema = z
       .string()
       .min(1, "Email is required.")
       .email("Please enter a valid email address."),
-    password: z
-      .string()
-      .min(1, "Password is required.")
-      .min(8, "Password must be between 8 and 64 characters.")
-      .max(64, "Password must be between 8 and 64 characters.")
-      .refine((val) => !/\s/.test(val), "Password must not contain whitespace.")
-      .regex(
-        PASSWORD_REGEX,
-        "Password must include at least one uppercase letter, one lowercase letter, one digit, and one special character.",
-      ),
+    password: passwordFieldSchema,
     confirmPassword: z.string().min(1, "Confirm Password is required."),
     jobTitle: z.string().trim().max(100).optional().or(z.literal("")),
   })
@@ -53,18 +56,27 @@ export type SignUpFormValues = z.infer<typeof signUpSchema>;
 export const passwordRules = [
   {
     id: "length",
-    label: "At least 8 characters",
+    label: "8-64 characters",
     test: (value: string) => value.length >= 8 && value.length <= 64,
   },
   {
-    id: "case",
-    label: "One uppercase, lowercase, and digit",
-    test: (value: string) =>
-      /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value),
+    id: "uppercase",
+    label: "Uppercase letter",
+    test: (value: string) => /[A-Z]/.test(value),
+  },
+  {
+    id: "lowercase",
+    label: "Lowercase letter",
+    test: (value: string) => /[a-z]/.test(value),
+  },
+  {
+    id: "digit",
+    label: "At least one digit",
+    test: (value: string) => /\d/.test(value),
   },
   {
     id: "special",
-    label: "One special character",
+    label: "Special character (e.g. !@#$)",
     test: (value: string) => /[^A-Za-z0-9]/.test(value) && !/\s/.test(value),
   },
 ] as const;

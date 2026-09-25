@@ -7,8 +7,10 @@
   /* ---- Color: Action Blue & Tonal Range ---- */
   --color-primary: #003d9b;
   --color-primary-dark: #002d75;
+  --color-primary-dark-hover: #002b70;
   --color-primary-container: #0052cc;
   --color-input-bg: #d7e2ff;
+  --color-input-bg-hover: #c9daff;
   --color-checklist-bg: #e8edff;
   --color-surface-highest: #d7e2ff;
   --color-surface-medium: #737685;
@@ -20,6 +22,7 @@
   --color-slate-600: #4f5f7b;
   --color-slate-500: #434654;
   --color-slate-300: #c3c6d6;
+  --color-border-subtle: #e2e5f0;
   --color-placeholder: #737685;
 
   /* ---- Color: Semantic ---- */
@@ -28,6 +31,7 @@
   --color-success-bg: #e6f9f0;
   --color-error: #ba1a1a;
   --color-error-bg: #ffdad6;
+  --color-error-surface: #fff8f7;
   --color-warning: #ffb900;
   --color-warning-bg: #fff8e1;
 
@@ -96,9 +100,6 @@
   --shadow-btn-subtle: 0px 1px 2px 0px rgba(0, 0, 0, 0.051);
 }
 
-/* Added: responsive override for the "Projects" page headline —
-   mobile uses a different font-weight and letter-spacing than desktop,
-   which clamp() cannot express, so a media query is used instead. */
 @media (max-width: 767px) {
   :root {
     --text-headline-lg: 1.5rem; /* 24px */
@@ -109,14 +110,24 @@
 }
 
 .bg-btn-gradient {
-  background: linear-gradient(95.71deg, #003d9b 0%, #0052cc 100%);
+  background: linear-gradient(95.71deg, var(--color-primary) 0%, var(--color-primary-container) 100%);
   box-shadow: var(--shadow-btn-subtle);
 }
 
-/* Added: matches the 135deg gradient specified for the Create New Project button */
 .bg-btn-gradient-card {
-  background: linear-gradient(135deg, #003d9b 0%, #0052cc 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-container) 100%);
   box-shadow: var(--shadow-btn-subtle);
+}
+
+.bg-btn-gradient-forgot {
+  background: linear-gradient(99.8deg, #003d9b 0%, #0052cc 100%);
+  box-shadow: 0px 1px 2px 0px #0000000d;
+}
+
+@media (min-width: 640px) {
+  .bg-btn-gradient-forgot {
+    background: linear-gradient(135deg, #003d9b 0%, #0052cc 100%);
+  }
 }
 
 body {
@@ -124,7 +135,7 @@ body {
   color: var(--color-slate-900);
   font-family: var(--font-sans);
 }
-/* Added: icon color via CSS mask (SVG files are static, colored through background-color) */
+
 .icon-primary {
   display: inline-block;
   background-color: var(--color-primary);

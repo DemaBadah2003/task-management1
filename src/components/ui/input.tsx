@@ -7,6 +7,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   optional?: boolean;
   labelAction?: ReactNode;
+  labelClassName?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -18,6 +19,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       error,
       optional,
       labelAction,
+      labelClassName,
       id,
       ...props
     },
@@ -35,7 +37,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <div className="flex items-center justify-between">
           <label
             htmlFor={inputId}
-            className="text-[11px] leading-[16.5px] font-bold tracking-[0.55px] text-slate-600 uppercase"
+            className={cn(
+              'text-[11px] leading-[16.5px] font-bold tracking-[0.55px] text-slate-600 uppercase',
+              labelClassName
+            )}
           >
             {label}
             {optional && (

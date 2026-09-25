@@ -105,14 +105,14 @@ export function MobileNavigation({
       {isOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden">
           <div
-            className="fixed inset-0 bg-[#041B3C]/40 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
             onClick={onClose}
           />
 
-          <div className="relative z-10 flex h-full w-[280px] max-w-[85vw] flex-col justify-between bg-[#F1F3FF] px-5 pt-3 pb-5 shadow-2xl transition-transform duration-300">
+          <div className="relative z-10 flex h-full w-[280px] max-w-[85vw] flex-col justify-between bg-surface-low px-5 pt-3 pb-5 shadow-2xl transition-transform duration-300">
             <div className="flex flex-col gap-6">
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-[#E8EDFF] pb-4">
+              <div className="flex items-center justify-between border-b border-card-border pb-4">
                 <Link
                   href="/project"
                   onClick={onClose}
@@ -125,7 +125,7 @@ export function MobileNavigation({
                     height={24}
                     className="h-6 w-auto"
                   />
-                  <span className="text-[18px] font-bold tracking-[0.1em] text-[#041B3C]">
+                  <span className="text-[18px] font-bold tracking-[0.1em] text-slate-900">
                     TASKLY
                   </span>
                 </Link>
@@ -134,7 +134,7 @@ export function MobileNavigation({
                   type="button"
                   onClick={onClose}
                   aria-label="Close navigation menu"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-[#041B3C] transition-colors hover:bg-[#E8EDFF]"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-900 transition-colors hover:bg-card-border"
                 >
                   <svg
                     className="h-5 w-5"
@@ -159,7 +159,7 @@ export function MobileNavigation({
                   onClick={onClose}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
                     pathname === '/project'
-                      ? 'border border-[#E8EDFF] bg-white shadow-2xs'
+                      ? 'border border-card-border bg-white shadow-2xs'
                       : 'hover:bg-white/60'
                   }`}
                 >
@@ -170,7 +170,7 @@ export function MobileNavigation({
                     height={20}
                     className="h-5 w-5 shrink-0"
                   />
-                  <span style={navTextStyle} className="text-[#041B3C]">
+                  <span style={navTextStyle} className="text-slate-900">
                     Projects
                   </span>
                 </Link>
@@ -180,7 +180,7 @@ export function MobileNavigation({
                   onClick={onClose}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
                     pathname === '/statistics'
-                      ? 'border border-[#E8EDFF] bg-white shadow-2xs'
+                      ? 'border border-card-border bg-white shadow-2xs'
                       : 'hover:bg-white/60'
                   }`}
                 >
@@ -191,7 +191,7 @@ export function MobileNavigation({
                     height={18}
                     className="h-4.5 w-4.5 shrink-0"
                   />
-                  <span style={navTextStyle} className="text-[#041B3C]">
+                  <span style={navTextStyle} className="text-slate-900">
                     My Statistics
                   </span>
                 </Link>
@@ -200,13 +200,13 @@ export function MobileNavigation({
               {/* Active Project Accordion inside Drawer (Visible when inside a project) */}
               {activeProjectId && (
                 <>
-                  <div className="-mt-3 border-t border-[#E8EDFF]" />
+                  <div className="-mt-3 border-t border-card-border" />
 
-                  <div className="flex flex-col overflow-hidden rounded-[12px] border border-[#E8EDFF]">
+                  <div className="flex flex-col overflow-hidden rounded-[12px] border border-card-border">
                     <button
                       type="button"
                       onClick={() => setIsAccordionOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between bg-[#D7E2FF] p-3 text-left transition-colors hover:bg-[#C9DAFF]"
+                      className="flex w-full items-center justify-between bg-input-bg p-3 text-left transition-colors hover:bg-input-bg-hover"
                     >
                       <div className="flex min-w-0 items-center gap-2.5">
                         <Image
@@ -217,14 +217,14 @@ export function MobileNavigation({
                           className="h-4.5 w-4.5 shrink-0"
                         />
                         <span
-                          className="truncate text-[14px] leading-[20px] font-semibold text-[#041B3C]"
+                          className="truncate text-[14px] leading-[20px] font-semibold text-slate-900"
                           title={activeProjectName || undefined}
                         >
                           {activeProjectName || 'Active Project'}
                         </span>
                       </div>
                       <svg
-                        className={`h-4 w-4 text-[#041B3C] transition-transform ${
+                        className={`h-4 w-4 text-slate-900 transition-transform ${
                           isAccordionOpen ? 'rotate-180' : ''
                         }`}
                         fill="none"
@@ -249,10 +249,10 @@ export function MobileNavigation({
                               key={link.name}
                               href={link.href}
                               onClick={onClose}
-                              className={`flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors ${
+                              className={`flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-slate-900 transition-colors ${
                                 isSelected
-                                  ? 'bg-[#F1F3FF]'
-                                  : 'hover:bg-[#F1F3FF]/60'
+                                  ? 'bg-surface-low'
+                                  : 'hover:bg-surface-low/60'
                               }`}
                             >
                               {link.icon}
@@ -268,16 +268,16 @@ export function MobileNavigation({
             </div>
 
             {/* Bottom Logout Button in Drawer */}
-            <div className="mt-auto border-t border-[#E8EDFF] pt-4">
+            <div className="mt-auto border-t border-card-border pt-4">
               <button
                 type="button"
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-[#BA1A1A] transition-colors hover:bg-[#FFDAD6]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-error transition-colors hover:bg-error-bg/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoggingOut ? (
                   <svg
-                    className="h-4.5 w-4.5 animate-spin shrink-0 text-[#BA1A1A]"
+                    className="h-4.5 w-4.5 animate-spin shrink-0 text-error"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -312,16 +312,16 @@ export function MobileNavigation({
         </div>
       )}
 
-      {/* 2. Mobile Bottom Navigation Bar: Displays ALL required navigation links per Ticket Requirement 7 */}
-      <nav className="fixed right-0 bottom-0 left-0 z-40 flex h-[64px] w-full items-center justify-center border-t border-[#E8EDFF] bg-[#F1F3FF] px-2 shadow-lg md:hidden">
+      {/* 2. Mobile Bottom Navigation Bar */}
+      <nav className="fixed right-0 bottom-0 left-0 z-40 flex h-[64px] w-full items-center justify-center border-t border-card-border bg-surface-low px-2 shadow-lg md:hidden">
         <div className="flex w-full items-center justify-around">
           {/* Epics */}
           <Link
             href={epicsHref}
             className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
               activeProjectId && pathname === `/project/${activeProjectId}/epics`
-                ? 'text-[#003D9B]'
-                : 'text-[#4F5F7B]'
+                ? 'text-primary'
+                : 'text-slate-600'
             }`}
           >
             <Image
@@ -339,8 +339,8 @@ export function MobileNavigation({
             href={tasksHref}
             className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
               activeProjectId && pathname === `/project/${activeProjectId}/tasks`
-                ? 'text-[#003D9B]'
-                : 'text-[#4F5F7B]'
+                ? 'text-primary'
+                : 'text-slate-600'
             }`}
           >
             <Image
@@ -357,7 +357,7 @@ export function MobileNavigation({
           <Link
             href="/project"
             className={`flex flex-col items-center gap-1 text-[10px] font-bold transition-colors ${
-              pathname === '/project' ? 'text-[#003D9B]' : 'text-[#041B3C]'
+              pathname === '/project' ? 'text-primary' : 'text-slate-900'
             }`}
           >
             <Image
@@ -375,8 +375,8 @@ export function MobileNavigation({
             href={membersHref}
             className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
               activeProjectId && pathname === `/project/${activeProjectId}/members`
-                ? 'text-[#003D9B]'
-                : 'text-[#4F5F7B]'
+                ? 'text-primary'
+                : 'text-slate-600'
             }`}
           >
             <Image
@@ -394,8 +394,8 @@ export function MobileNavigation({
             href={detailsHref}
             className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
               activeProjectId && pathname === `/project/${activeProjectId}/edit`
-                ? 'text-[#003D9B]'
-                : 'text-[#4F5F7B]'
+                ? 'text-primary'
+                : 'text-slate-600'
             }`}
           >
             <Image

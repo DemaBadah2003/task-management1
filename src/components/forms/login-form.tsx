@@ -56,7 +56,6 @@ export function LoginForm() {
         { email: values.email, password: values.password },
         Boolean(values.rememberMe)
       );
-      // Success flow per TM-04: redirect to /project
       router.push('/project');
     } catch (err) {
       setApiError(
@@ -66,9 +65,9 @@ export function LoginForm() {
   }
 
   return (
-    <div className="mx-auto flex w-full flex-col justify-between rounded-[8px] border border-[#E8EDFF] bg-white p-6 shadow-[0px_24px_48px_rgba(4,27,60,0.06)] sm:h-[586px] sm:w-[480px] sm:max-w-[480px] sm:p-[48px]">
+    <div className="border-card-border mx-auto flex w-full flex-col rounded-[8px] border bg-white p-6 shadow-[0px_24px_48px_rgba(4,27,60,0.06)] sm:w-[480px] sm:max-w-[480px] sm:p-[48px]">
       {/* Header */}
-      <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
+      <div className="mb-10 flex flex-col items-center text-center">
         <h1 className="sm:text-headline-lg text-2xl leading-8 font-semibold tracking-tight text-slate-900 sm:leading-[36px]">
           Welcome Back
         </h1>
@@ -101,8 +100,6 @@ export function LoginForm() {
           {...register('email')}
         />
 
-        {/* Password field, with the short "Forgot?" link pinned next to the
-            PASSWORD label on mobile only — matches the mobile Figma frame */}
         <div className="relative">
           <PasswordInput
             label="PASSWORD"
@@ -112,22 +109,18 @@ export function LoginForm() {
             {...register('password')}
           />
           <Link
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className="absolute top-0 right-0 inline text-xs leading-4 font-semibold text-[#003D9B] hover:underline sm:hidden"
+            href="/forgot-password"
+            className="text-primary absolute top-0 right-0 inline text-xs leading-4 font-semibold hover:underline sm:hidden"
           >
             Forgot?
           </Link>
         </div>
 
-        {/* Remember Me & Forgot Password row — "Forgot Password?" sits
-            opposite "Remember Me" on desktop only; on mobile it's already
-            covered by the short "Forgot?" link above */}
         <div className="flex items-center justify-between">
           <label className="flex cursor-pointer items-center gap-2 select-none">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-[#C3C6D6] text-[#003D9B] focus:ring-[#003D9B]"
+              className="text-primary focus:ring-primary h-4 w-4 rounded border-slate-300"
               {...register('rememberMe')}
             />
             <span className="text-body-md leading-5 font-medium text-slate-500">
@@ -136,9 +129,8 @@ export function LoginForm() {
           </label>
 
           <Link
-            href="#"
-            onClick={(e) => e.preventDefault()}
-            className="hidden align-middle font-sans text-sm leading-5 font-medium tracking-normal text-[#003D9B] hover:underline sm:inline"
+            href="/forgot-password"
+            className="text-primary hidden align-middle font-sans text-sm leading-5 font-medium tracking-normal hover:underline sm:inline"
           >
             Forgot Password?
           </Link>
@@ -154,11 +146,11 @@ export function LoginForm() {
           </Button>
         </div>
 
-        <p className="mt-6 text-center text-sm leading-5 text-[#4F5F7B]">
+        <p className="mt-6 text-center text-sm leading-5 text-slate-600">
           Don&apos;t have an account?{' '}
           <Link
             href="/sign-up"
-            className="font-sans text-sm leading-5 font-semibold tracking-normal text-[#003D9B] transition-colors hover:underline"
+            className="text-primary font-sans text-sm leading-5 font-semibold tracking-normal transition-colors hover:underline"
           >
             Sign Up
           </Link>

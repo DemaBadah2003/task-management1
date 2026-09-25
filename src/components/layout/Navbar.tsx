@@ -16,14 +16,14 @@ export function Navbar({ onToggleMobileMenu }: NavbarProps) {
   const initials = getInitials(user?.name);
 
   return (
-    <header className="sticky top-0 z-30 flex h-[64px] w-full items-center justify-between gap-2 overflow-x-hidden border-b border-[#E8EDFF] bg-[#F9F9FF] px-4 py-[12px] sm:px-6">
+    <header className="sticky top-0 z-30 flex h-[64px] w-full items-center justify-between gap-2 overflow-x-hidden border-b border-card-border bg-background px-4 py-[12px] sm:px-6">
       {/* Left section: Mobile/Tablet Burger button & Brand Logo */}
       <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={onToggleMobileMenu}
           aria-label="Toggle navigation menu"
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-[#041B3C] transition-colors hover:bg-[#E8EDFF]/60 focus:outline-none md:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-900 transition-colors hover:bg-card-border/60 focus:outline-none md:hidden"
         >
           <svg
             className="h-6 w-6"
@@ -45,7 +45,7 @@ export function Navbar({ onToggleMobileMenu }: NavbarProps) {
           href="/project"
           className="flex items-center gap-2 focus:outline-none md:hidden"
         >
-          <span className="text-[18px] font-bold tracking-[0.1em] text-[#041B3C]">
+          <span className="text-[18px] font-bold tracking-[0.1em] text-slate-900">
             TASKLY
           </span>
         </Link>
@@ -56,20 +56,20 @@ export function Navbar({ onToggleMobileMenu }: NavbarProps) {
         {loading ? (
           <div className="flex animate-pulse items-center gap-3">
             <div className="hidden flex-col items-end gap-1 sm:flex">
-              <div className="h-4 w-28 rounded bg-[#D7E2FF]/60"></div>
-              <div className="h-3 w-20 rounded bg-[#D7E2FF]/40"></div>
+              <div className="h-4 w-28 rounded bg-input-bg/60"></div>
+              <div className="h-3 w-20 rounded bg-input-bg/40"></div>
             </div>
-            <div className="h-9 w-9 rounded-[8px] bg-[#D7E2FF]"></div>
+            <div className="h-9 w-9 rounded-[8px] bg-input-bg"></div>
           </div>
         ) : (
           <>
             {/* Full Name & Job Title (Visible on sm+ screens) */}
             <div className="hidden max-w-[140px] min-w-0 flex-col items-end text-right sm:flex md:max-w-[200px] lg:max-w-[280px]">
-              <span className="w-full truncate text-[14px] leading-tight font-bold text-[#041B3C]">
+              <span className="w-full truncate text-[14px] leading-tight font-bold text-slate-900">
                 {user?.name || 'Mahmoud Taha'}
               </span>
               <span
-                className="w-full truncate font-bold text-[#003D9B] uppercase"
+                className="w-full truncate font-bold text-primary uppercase"
                 style={{
                   fontFamily: 'Inter',
                   fontWeight: 700,
@@ -83,9 +83,9 @@ export function Navbar({ onToggleMobileMenu }: NavbarProps) {
               </span>
             </div>
 
-            {/* Initials Avatar Badge (Always visible matching Figma) */}
+            {/* Initials Avatar Badge */}
             <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-[#003D9B] text-[14px] font-bold text-white shadow-xs select-none"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-primary text-[14px] font-bold text-white shadow-xs select-none"
               title={user?.name || 'Mahmoud Taha'}
             >
               {initials || 'MT'}

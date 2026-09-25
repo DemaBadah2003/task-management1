@@ -18,7 +18,7 @@ export function AuthenticatedLayout({
   return (
     <UserProvider>
       <ProjectProvider>
-        <div className="flex h-screen w-full overflow-hidden bg-[#F9F9FF]">
+        <div className="flex h-screen w-full overflow-hidden bg-background">
           {/* Desktop Sidebar (hidden on mobile/tablet screens < 768px) */}
           <div className="hidden md:flex shrink-0 h-full">
             <Sidebar

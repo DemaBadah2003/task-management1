@@ -110,7 +110,6 @@ export function Sidebar({
       ]
     : [];
 
-  // Shared typography style matching Figma spec exactly for both "Projects" and "My Statistics"
   const navTextStyle: React.CSSProperties = {
     fontFamily: 'Inter',
     fontWeight: 500,
@@ -121,10 +120,9 @@ export function Sidebar({
   };
 
   return (
-    /* Sidebar Shell with exact Figma color background: #F1F3FF */
     <aside
       className={cn(
-        'relative flex h-full min-h-screen flex-col justify-between border-r border-black/10 bg-[#F1F3FF] transition-all duration-300 select-none',
+        'relative flex h-full min-h-screen flex-col justify-between border-r border-black/10 bg-surface-low transition-all duration-300 select-none',
         isCollapsed ? 'w-[72px] px-2 py-4' : 'w-[256px] p-4',
         className
       )}
@@ -147,7 +145,7 @@ export function Sidebar({
             priority
           />
           {!isCollapsed && (
-            <span className="text-[18px] font-bold tracking-[0.1em] text-[#041B3C]">
+            <span className="text-[18px] font-bold tracking-[0.1em] text-slate-900">
               TASKLY
             </span>
           )}
@@ -161,7 +159,7 @@ export function Sidebar({
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
               pathname === '/project'
-                ? 'border border-[#E8EDFF] bg-white shadow-2xs'
+                ? 'border border-card-border bg-white shadow-2xs'
                 : 'hover:bg-white/60',
               isCollapsed && 'justify-center px-0'
             )}
@@ -175,7 +173,7 @@ export function Sidebar({
               className="h-5 w-5 shrink-0"
             />
             {!isCollapsed && (
-              <span style={navTextStyle} className="text-[#041B3C]">
+              <span style={navTextStyle} className="text-slate-900">
                 Projects
               </span>
             )}
@@ -187,7 +185,7 @@ export function Sidebar({
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
               pathname === '/statistics'
-                ? 'border border-[#E8EDFF] bg-white shadow-2xs'
+                ? 'border border-card-border bg-white shadow-2xs'
                 : 'hover:bg-white/60',
               isCollapsed && 'justify-center px-0'
             )}
@@ -201,7 +199,7 @@ export function Sidebar({
               className="h-4.5 w-4.5 shrink-0"
             />
             {!isCollapsed && (
-              <span style={navTextStyle} className="text-[#041B3C]">
+              <span style={navTextStyle} className="text-slate-900">
                 My Statistics
               </span>
             )}
@@ -213,7 +211,7 @@ export function Sidebar({
           <div className="flex flex-col gap-3">
             <div
               className={cn(
-                'border-t border-[#E8EDFF]',
+                'border-t border-card-border',
                 isCollapsed && 'mx-auto w-8'
               )}
             />
@@ -221,12 +219,12 @@ export function Sidebar({
             {/* Section 3: Current Active Project Accordion & Collapsed Floating Popup */}
             {!isCollapsed ? (
               /* EXPANDED MODE: Accordion */
-              <div className="flex flex-col overflow-hidden rounded-[12px] border border-[#E8EDFF]">
-                {/* Accordion Header (exact Figma background: #D7E2FF) */}
+              <div className="flex flex-col overflow-hidden rounded-[12px] border border-card-border">
+                {/* Accordion Header */}
                 <button
                   type="button"
                   onClick={() => setIsAccordionOpen((prev) => !prev)}
-                  className="flex w-full items-center justify-between bg-[#D7E2FF] p-3 text-left transition-colors hover:bg-[#C9DAFF]"
+                  className="flex w-full items-center justify-between bg-input-bg p-3 text-left transition-colors hover:bg-input-bg-hover"
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
                     <Image
@@ -237,7 +235,7 @@ export function Sidebar({
                       className="h-4.5 w-4.5 shrink-0"
                     />
                     <span
-                      className="truncate text-[14px] leading-[20px] font-semibold text-[#041B3C]"
+                      className="truncate text-[14px] leading-[20px] font-semibold text-slate-900"
                       title={activeProjectName || undefined}
                     >
                       {activeProjectName || 'Active Project'}
@@ -245,7 +243,7 @@ export function Sidebar({
                   </div>
                   <svg
                     className={cn(
-                      'h-4 w-4 shrink-0 text-[#041B3C] transition-transform duration-200',
+                      'h-4 w-4 shrink-0 text-slate-900 transition-transform duration-200',
                       isAccordionOpen ? 'rotate-180' : 'rotate-0'
                     )}
                     fill="none"
@@ -271,8 +269,8 @@ export function Sidebar({
                           key={link.name}
                           href={link.href}
                           className={cn(
-                            'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors',
-                            isSelected ? 'bg-[#F1F3FF]' : 'hover:bg-[#F1F3FF]/60'
+                            'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-slate-900 transition-colors',
+                            isSelected ? 'bg-surface-low' : 'hover:bg-surface-low/60'
                           )}
                         >
                           {link.icon}
@@ -291,8 +289,8 @@ export function Sidebar({
                   onClick={() => setIsPopupOpen((prev) => !prev)}
                   aria-label="Active project links popup"
                   className={cn(
-                    'flex h-11 w-11 items-center justify-center rounded-xl border border-[#E8EDFF] bg-[#D7E2FF] text-[#041B3C] transition-all hover:bg-[#C9DAFF]',
-                    isPopupOpen && 'bg-[#C9DAFF] ring-2 ring-[#0052CC]/50'
+                    'flex h-11 w-11 items-center justify-center rounded-xl border border-card-border bg-input-bg text-slate-900 transition-all hover:bg-input-bg-hover',
+                    isPopupOpen && 'bg-input-bg-hover ring-2 ring-primary-container/50'
                   )}
                   title={activeProjectName || 'Active Project Links'}
                 >
@@ -307,8 +305,8 @@ export function Sidebar({
 
                 {/* Floating Popover Menu */}
                 {isPopupOpen && (
-                  <div className="animate-in fade-in zoom-in-95 absolute top-0 left-[64px] z-50 flex w-[246px] flex-col gap-[4px] rounded-l-[12px] rounded-r-[8px] border border-[#E8EDFF] bg-[#D7E2FF] p-[8px] shadow-xl duration-150">
-                    <div className="px-3 py-1.5 text-xs font-bold text-[#041B3C] truncate border-b border-[#E8EDFF]/60 mb-1">
+                  <div className="animate-in fade-in zoom-in-95 absolute top-0 left-[64px] z-50 flex w-[246px] flex-col gap-[4px] rounded-l-[12px] rounded-r-[8px] border border-card-border bg-input-bg p-[8px] shadow-xl duration-150">
+                    <div className="px-3 py-1.5 text-xs font-bold text-slate-900 truncate border-b border-card-border/60 mb-1">
                       {activeProjectName}
                     </div>
                     {projectLinks.map((link) => {
@@ -319,7 +317,7 @@ export function Sidebar({
                           href={link.href}
                           onClick={() => setIsPopupOpen(false)}
                           className={cn(
-                            'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-[#041B3C] transition-colors',
+                            'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-slate-900 transition-colors',
                             isSelected
                               ? 'bg-white shadow-2xs'
                               : 'hover:bg-white/60'
@@ -339,13 +337,13 @@ export function Sidebar({
       </div>
 
       {/* Bottom Section: Collapse Toggle & Logout Buttons */}
-      <div className="mt-auto flex flex-col gap-2 border-t border-[#E8EDFF] pt-4">
+      <div className="mt-auto flex flex-col gap-2 border-t border-card-border pt-4">
         {/* Collapse Button */}
         <button
           type="button"
           onClick={onToggleCollapse}
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-[#4F5F7B] transition-colors hover:bg-[#E8EDFF]/60 hover:text-[#041B3C]',
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-slate-600 transition-colors hover:bg-card-border/60 hover:text-slate-900',
             isCollapsed && 'justify-center px-0'
           )}
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -369,7 +367,7 @@ export function Sidebar({
           onClick={handleLogout}
           disabled={isLoggingOut}
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-[#BA1A1A] transition-colors hover:bg-[#FFDAD6]/50 disabled:cursor-not-allowed disabled:opacity-50',
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-error transition-colors hover:bg-error-bg/50 disabled:cursor-not-allowed disabled:opacity-50',
             isCollapsed && 'justify-center px-0'
           )}
           title={
@@ -382,7 +380,7 @@ export function Sidebar({
         >
           {isLoggingOut ? (
             <svg
-              className="h-4.5 w-4.5 shrink-0 animate-spin text-[#BA1A1A]"
+              className="h-4.5 w-4.5 shrink-0 animate-spin text-error"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"

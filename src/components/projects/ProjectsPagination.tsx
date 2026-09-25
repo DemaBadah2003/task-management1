@@ -60,7 +60,7 @@ export function ProjectsPagination({
       <button
         type="button"
         aria-label="Previous page"
-        className={`${boxBase} border-[#E2E5F0] bg-white text-[#737685] hover:bg-[#F1F3FF]`}
+        className={`${boxBase} border-border-subtle bg-white text-surface-medium hover:bg-surface-low`}
       >
         <ChevronLeftIcon />
       </button>
@@ -69,7 +69,7 @@ export function ProjectsPagination({
         page === '...' ? (
           <span
             key={`ellipsis-${index}`}
-            className={`${boxBase} border-[#E2E5F0] bg-white text-[#737685]`}
+            className={`${boxBase} border-border-subtle bg-white text-surface-medium`}
           >
             ...
           </span>
@@ -80,8 +80,8 @@ export function ProjectsPagination({
             aria-current={page === currentPage ? 'page' : undefined}
             className={`${boxBase} ${
               page === currentPage
-                ? 'border-[#003D9B] bg-[#003D9B] text-white'
-                : 'border-[#E2E5F0] bg-white text-[#041B3C] hover:bg-[#F1F3FF]'
+                ? 'border-primary bg-primary text-white'
+                : 'border-border-subtle bg-white text-slate-900 hover:bg-surface-low'
             }`}
           >
             {page}
@@ -92,7 +92,7 @@ export function ProjectsPagination({
       <button
         type="button"
         aria-label="Next page"
-        className={`${boxBase} border-[#E2E5F0] bg-white text-[#737685] hover:bg-[#F1F3FF]`}
+        className={`${boxBase} border-border-subtle bg-white text-surface-medium hover:bg-surface-low`}
       >
         <ChevronRightIcon />
       </button>

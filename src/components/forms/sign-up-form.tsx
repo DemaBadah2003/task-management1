@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { PasswordInput } from '@/src/components/ui/password-input';
-import { PasswordChecklist } from '@/src/components/ui/password-checklist';
+import { PasswordChecklistSignUp } from '@/src/components/ui/password-checklist';
 import {
   signUpSchema,
   type SignUpFormValues,
@@ -134,7 +134,7 @@ export function SignUpForm() {
           />
         </div>
 
-        <PasswordChecklist password={password ?? ''} />
+        <PasswordChecklistSignUp password={password ?? ''} />
 
         <div className="mt-2">
           <Button

@@ -21,12 +21,10 @@ export function ProjectsList({
   status = 'success',
   onRetry,
 }: ProjectsListProps) {
-  // --- حالة التحميل ---
   if (status === 'loading') {
     return <ProjectsLoadingSkeleton />;
   }
 
-  // --- حالة الخطأ ---
   if (status === 'error') {
     return <ProjectsErrorState onRetry={onRetry ?? (() => {})} />;
   }
@@ -39,20 +37,17 @@ export function ProjectsList({
         <>
           <div className="flex flex-row flex-wrap items-center justify-between gap-4">
             <div className="flex flex-col gap-1">
-              <h1 className="text-[36px] leading-[40px] font-semibold tracking-[-0.9px] text-[#041B3C]">
+              <h1 className="text-[36px] leading-[40px] font-semibold tracking-[-0.9px] text-slate-900">
                 Projects
               </h1>
-              <p className="text-[14px] leading-[20px] text-[#4F5F7B]">
+              <p className="text-[14px] leading-[20px] text-slate-600">
                 Manage and curate your projects
               </p>
             </div>
 
             <Link
               href="/project/add"
-              className="hidden w-fit shrink-0 items-center justify-center gap-2 rounded-[2px] px-6 py-3 text-center align-middle text-[16px] leading-[24px] font-medium tracking-[0px] whitespace-nowrap text-white shadow-[0px_1px_2px_0px_#0000000D] md:flex"
-              style={{
-                background: 'linear-gradient(135deg, #003D9B 0%, #0052CC 100%)',
-              }}
+              className="bg-btn-gradient-card hidden w-fit shrink-0 items-center justify-center gap-2 rounded-[2px] px-6 py-3 text-center align-middle text-[16px] leading-[24px] font-medium tracking-[0px] whitespace-nowrap text-white md:flex"
             >
               Create New Project
             </Link>

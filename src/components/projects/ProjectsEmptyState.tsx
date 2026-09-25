@@ -11,12 +11,12 @@ const ICONS = {
 export function ProjectsEmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-8 px-8 py-24 text-center">
-      <div className="relative flex h-[288px] w-[288px] items-center justify-center rounded-[8px] bg-[#F1F3FF]">
+      <div className="relative flex h-[288px] w-[288px] items-center justify-center rounded-[8px] bg-surface-low">
         <div
           className="absolute inset-0 rounded-[8px] opacity-10"
           style={{
             backgroundImage:
-              'linear-gradient(#003D9B 12px, transparent 12px), linear-gradient(90deg, #003D9B 12px, transparent 12px)',
+              'linear-gradient(var(--color-primary) 12px, transparent 12px), linear-gradient(90deg, var(--color-primary) 12px, transparent 12px)',
           }}
         />
 
@@ -47,7 +47,7 @@ export function ProjectsEmptyState() {
         </div>
 
         <div
-          className="relative z-10 flex h-24 w-24 items-center justify-center rounded-[12px] bg-[#DAE2FF]"
+          className="relative z-10 flex h-24 w-24 items-center justify-center rounded-[12px] bg-surface-highest"
           style={{
             boxShadow:
               '0px 8px 10px -6px rgba(4,27,60,0.05), 0px 20px 25px -5px rgba(4,27,60,0.05)',
@@ -64,10 +64,10 @@ export function ProjectsEmptyState() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-[36px] leading-[40px] font-semibold tracking-[-0.9px] text-[#041B3C]">
+        <h2 className="text-[36px] leading-[40px] font-semibold tracking-[-0.9px] text-slate-900">
           No Projects
         </h2>
-        <p className="max-w-[520px] text-[18px] leading-[29.25px] font-normal text-[#434654]">
+        <p className="max-w-[520px] text-[18px] leading-[29.25px] font-normal text-slate-500">
           You don&apos;t have any projects yet. Start by defining your first
           architectural workspace to begin tracking tasks and epics.
         </p>
@@ -75,10 +75,7 @@ export function ProjectsEmptyState() {
 
       <Link
         href="/project/add"
-        className="flex w-fit items-center justify-center gap-[11.99px] rounded-[4px] px-8 py-4 text-center align-middle text-[18px] leading-[28px] font-bold text-white"
-        style={{
-          background: 'linear-gradient(135deg, #003D9B 0%, #0052CC 100%)',
-        }}
+        className="bg-btn-gradient-card flex w-fit items-center justify-center gap-[11.99px] rounded-[4px] px-8 py-4 text-center align-middle text-[18px] leading-[28px] font-bold text-white"
       >
         Create New Project
       </Link>

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function SignUpPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-[#F9F9FF] px-6 py-6 sm:px-8 md:px-12">
+    <div className="flex min-h-screen flex-col bg-background px-6 py-6 sm:px-8 md:px-12">
       {/* Brand Header */}
       <header className="w-full max-w-7xl mx-auto flex items-center gap-2 py-2">
         <Link href="/" className="flex items-center gap-2 focus:outline-none">
@@ -23,7 +23,7 @@ export default function SignUpPage() {
             className="h-6 w-auto"
             priority
           />
-          <span className="text-[18px] font-bold tracking-[0.1em] text-[#041B3C]">
+          <span className="text-[18px] font-bold tracking-[0.1em] text-slate-900">
             TASKLY
           </span>
         </Link>
@@ -38,6 +38,3 @@ export default function SignUpPage() {
     </div>
   );
 }
-
-
-

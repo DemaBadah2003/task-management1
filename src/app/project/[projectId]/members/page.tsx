@@ -15,12 +15,12 @@ export default async function ProjectMembersPage({ params }: PageProps) {
   return (
     <AuthenticatedLayout>
       <div className="flex flex-col gap-4 max-w-6xl mx-auto p-6">
-        <h1 className="text-[24px] font-bold text-[#041B3C]">Project Members</h1>
-        <p className="text-[14px] text-[#4F5F7B]">
+        <h1 className="text-[24px] font-bold text-slate-900">Project Members</h1>
+        <p className="text-[14px] text-slate-600">
           Members assigned to active project (Project ID: {projectId}).
         </p>
-        <div className="rounded-2xl bg-white p-6 border border-[#E8EDFF]">
-          <span className="text-[14px] font-semibold text-[#041B3C]">
+        <div className="rounded-2xl bg-white p-6 border border-card-border">
+          <span className="text-[14px] font-semibold text-slate-900">
             Project members list placeholder.
           </span>
         </div>

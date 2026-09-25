@@ -13,10 +13,10 @@ export function ProjectsLoadingSkeleton() {
     <div className="@container flex flex-col gap-6">
       <div className="flex flex-row items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[36px] leading-[40px] font-semibold tracking-[-0.9px] text-[#041B3C]">
+          <h1 className="text-[36px] leading-[40px] font-semibold tracking-[-0.9px] text-slate-900">
             Projects
           </h1>
-          <p className="text-[14px] leading-[20px] text-[#4F5F7B]">
+          <p className="text-[14px] leading-[20px] text-slate-600">
             Manage and curate your projects
           </p>
         </div>

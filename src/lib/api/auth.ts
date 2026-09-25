@@ -165,3 +165,96 @@ export async function logoutApi(): Promise<void> {
   // Always clear client-side session cookies and local storage
   clearSession();
 }
+
+function isUserExistenceError(
+  status: number,
+  body: (ApiErrorResponse & { msg?: string; error_code?: string }) | null
+) {
+  const code = (body?.code ?? body?.error_code ?? '').toLowerCase();
+  const message = (body?.message ?? body?.msg ?? body?.error_description ?? '').toLowerCase();
+  return (
+    status === 404 ||
+    code.includes('user_not_found') ||
+    message.includes('user not found') ||
+    message.includes('email not found')
+  );
+}
+
+/** Sends POST /auth/v1/recover. Never reveals whether the email exists. */
+export async function recoverPassword(email: string): Promise<void> {
+  const redirectTo =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/reset-password`
+      : undefined;
+
+  const url = new URL(`${SUPABASE_URL}/auth/v1/recover`);
+  if (redirectTo) {
+    url.searchParams.set('redirect_to', redirectTo);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify({ email }),
+    });
+  } catch {
+    throw new ApiError(
+      'Network error. Please check your connection and try again.'
+    );
+  }
+
+  if (response.ok) {
+    return;
+  }
+
+  const errorBody = (await response
+    .json()
+    .catch(() => null)) as (ApiErrorResponse & {
+    msg?: string;
+    error_code?: string;
+  }) | null;
+
+  if (isUserExistenceError(response.status, errorBody)) {
+    return;
+  }
+
+  throw new ApiError(
+    response.status >= 500
+      ? 'Something went wrong. Please try again later.'
+      : 'We could not send the reset link. Please try again.'
+  );
+}
+
+/** Sends PUT /auth/v1/user with the recovery access token to set a new password. */
+export async function updatePasswordWithRecoveryToken(
+  accessToken: string,
+  password: string
+): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ password }),
+    });
+  } catch {
+    throw new ApiError(
+      'Network error. Please check your connection and try again.'
+    );
+  }
+
+  if (!response.ok) {
+    throw new ApiError(
+      'We could not update your password. The reset link may be invalid or expired. Please try again.'
+    );
+  }
+}

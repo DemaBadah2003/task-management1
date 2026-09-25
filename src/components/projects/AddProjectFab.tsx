@@ -6,7 +6,7 @@ export function AddProjectFab() {
     <Link
       href="/project/add"
       aria-label="Add project"
-      className="fixed right-4 bottom-24 z-40 flex h-14 w-14 items-center justify-center rounded-[var(--radius-card)] bg-[var(--color-primary)] text-white shadow-lg transition-transform active:scale-95 md:hidden"
+      className="fixed right-4 bottom-24 z-40 flex h-14 w-14 items-center justify-center rounded-[var(--radius-card)] bg-primary text-white shadow-lg transition-transform active:scale-95 md:hidden"
     >
       <svg
         width="24"
