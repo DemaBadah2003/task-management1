@@ -10,7 +10,7 @@ function SkeletonCard() {
 
 export function ProjectsLoadingSkeleton() {
   return (
-    <div className="@container flex flex-col gap-6">
+    <div className="@container flex min-h-full flex-col gap-6">
       <div className="flex flex-row items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-[36px] leading-[40px] font-semibold tracking-[-0.9px] text-slate-900">
@@ -27,6 +27,13 @@ export function ProjectsLoadingSkeleton() {
         {Array.from({ length: 6 }).map((_, i) => (
           <SkeletonCard key={i} />
         ))}
+      </div>
+
+      <div
+        className="mt-auto flex min-h-10 w-full justify-end pt-8"
+        aria-hidden="true"
+      >
+        <div className="hidden h-8 w-[272px] animate-pulse rounded bg-[var(--color-surface-low)] md:block" />
       </div>
     </div>
   );

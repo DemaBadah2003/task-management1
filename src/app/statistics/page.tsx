@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AuthenticatedLayout } from "@/src/components/layout/AuthenticatedLayout";
 
 export const metadata: Metadata = {
   title: "Statistics · Taskly",
@@ -8,7 +7,6 @@ export const metadata: Metadata = {
 
 export default function StatisticsPage() {
   return (
-    <AuthenticatedLayout>
       <div className="flex flex-col gap-6 w-full max-w-6xl mx-auto">
         <div className="flex flex-col gap-1">
           <h1 className="text-[24px] font-bold text-slate-900">My Statistics</h1>
@@ -32,6 +30,5 @@ export default function StatisticsPage() {
           </div>
         </div>
       </div>
-    </AuthenticatedLayout>
   );
 }

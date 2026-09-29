@@ -1,30 +1,53 @@
-import type { Metadata } from "next";
-import { AuthenticatedLayout } from "@/src/components/layout/AuthenticatedLayout";
+import Link from 'next/link';
+import CreateEpicForm from '@/src/components/epics/CreateEpicForm';
 
-export const metadata: Metadata = {
-  title: "Epics · Taskly",
-};
-
-interface PageProps {
+export default async function EpicsPage({
+  params,
+}: {
   params: Promise<{ projectId: string }>;
-}
-
-export default async function ProjectEpicsPage({ params }: PageProps) {
+}) {
   const { projectId } = await params;
 
   return (
-    <AuthenticatedLayout>
-      <div className="flex flex-col gap-4 max-w-6xl mx-auto p-6">
-        <h1 className="text-[24px] font-bold text-slate-900">Epics</h1>
-        <p className="text-[14px] text-slate-600">
-          Active Project Epics (Project ID: {projectId}).
-        </p>
-        <div className="rounded-2xl bg-white p-6 border border-card-border">
-          <span className="text-[14px] font-semibold text-slate-900">
-            No epics found yet.
-          </span>
-        </div>
+    <div className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8">
+      {/* Breadcrumbs - مخفي في الموبايل ويظهر في الشاشات المتوسطة والأكبر (Desktop) */}
+      <div className="mb-4 hidden items-center gap-2 text-[12px] font-semibold tracking-[0.3px] uppercase md:flex">
+        <Link href="/projects" className="text-[#434654]/95 hover:underline">
+          Projects
+        </Link>
+        <span className="text-[#434654]/60">/</span>
+        <Link
+          href={`/project/${projectId}`}
+          className="text-[#434654]/95 hover:underline"
+        >
+          Project Alpha
+        </Link>
+        <span className="text-[#434654]/60">/</span>
+        <Link
+          href={`/project/${projectId}/epics`}
+          className="text-[#434654]/95 hover:underline"
+        >
+          Epics
+        </Link>
+        <span className="text-[#434654]/60">/</span>
+        <span className="text-[#041B3C]">New Epic</span>
       </div>
-    </AuthenticatedLayout>
+
+      {/* Header Titles */}
+      <div className="flex flex-col gap-2">
+        <h1 className="text-[36px] leading-[40px] font-bold tracking-[-0.9px] text-[#041B3C]">
+          Create New Epic
+        </h1>
+        <p className="text-[16px] leading-[24px] font-normal text-[#434654]">
+          Define a major project phase or high-level milestone to group related
+          tasks and track architectural progress.
+        </p>
+      </div>
+
+      {/* Form Component */}
+      <div className="mt-8">
+        <CreateEpicForm projectId={projectId} />
+      </div>
+    </div>
   );
 }

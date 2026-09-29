@@ -1,12 +1,23 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/src/lib/utils';
 import { useUser } from '@/src/context/user-context';
 import { useActiveProject } from '@/src/context/project-context';
+
+// SVG icons as React components (generated from /public/icons with SVGR)
+import LogoIcon from '@/src/components/icons/Iconstaskly';
+import ProjectIcon from '@/src/components/icons/Project';
+import StatisticsIcon from '@/src/components/icons/MyStatistics';
+import FolderIcon from '@/src/components/icons/Folder';
+import TasksIcon from '@/src/components/icons/Tasks';
+import MembersIcon from '@/src/components/icons/Members';
+import EpicsIcon from '@/src/components/icons/Epics';
+import DetailsIcon from '@/src/components/icons/Details';
+import CollapseIcon from '@/src/components/icons/Collapse';
+import LogoutIcon from '@/src/components/icons/Logout';
 
 interface SidebarProps {
   isCollapsed?: boolean;
@@ -58,54 +69,22 @@ export function Sidebar({
         {
           name: 'Tasks',
           href: `/project/${activeProjectId}/tasks`,
-          icon: (
-            <Image
-              src="/icons/Tasks.svg"
-              alt="Tasks"
-              width={18}
-              height={18}
-              className="h-4.5 w-4.5 shrink-0"
-            />
-          ),
+          icon: <TasksIcon className="h-4.5 w-4.5 shrink-0" />,
         },
         {
           name: 'Members',
           href: `/project/${activeProjectId}/members`,
-          icon: (
-            <Image
-              src="/icons/Members.svg"
-              alt="Members"
-              width={18}
-              height={18}
-              className="h-4.5 w-4.5 shrink-0"
-            />
-          ),
+          icon: <MembersIcon className="h-4.5 w-4.5 shrink-0" />,
         },
         {
           name: 'Epics',
           href: `/project/${activeProjectId}/epics`,
-          icon: (
-            <Image
-              src="/icons/Epics.svg"
-              alt="Epics"
-              width={18}
-              height={18}
-              className="h-4.5 w-4.5 shrink-0"
-            />
-          ),
+          icon: <EpicsIcon className="h-4.5 w-4.5 shrink-0" />,
         },
         {
           name: 'Details',
           href: `/project/${activeProjectId}/edit`,
-          icon: (
-            <Image
-              src="/icons/Details.svg"
-              alt="Details"
-              width={18}
-              height={18}
-              className="h-4.5 w-4.5 shrink-0"
-            />
-          ),
+          icon: <DetailsIcon className="h-4.5 w-4.5 shrink-0" />,
         },
       ]
     : [];
@@ -119,10 +98,16 @@ export function Sidebar({
     verticalAlign: 'middle',
   };
 
+  // Active state color for the Projects link (Figma fill)
+  const ACTIVE_BLUE = '#003D9B';
+  const INACTIVE_TEXT = '#0F172A'; // slate-900
+  const isProjectsActive = pathname === '/project';
+  const projectsColor = isProjectsActive ? ACTIVE_BLUE : INACTIVE_TEXT;
+
   return (
     <aside
       className={cn(
-        'relative flex h-full min-h-screen flex-col justify-between border-r border-black/10 bg-surface-low transition-all duration-300 select-none',
+        'bg-surface-low relative flex h-full min-h-screen flex-col justify-between border-r border-black/10 transition-all duration-300 select-none',
         isCollapsed ? 'w-[72px] px-2 py-4' : 'w-[256px] p-4',
         className
       )}
@@ -136,14 +121,7 @@ export function Sidebar({
             isCollapsed ? 'justify-center' : 'justify-start gap-2.5'
           )}
         >
-          <Image
-            src="/icons/iconstaskly.svg"
-            alt="Taskly Logo"
-            width={24}
-            height={26}
-            className="h-6 w-auto shrink-0"
-            priority
-          />
+          <LogoIcon className="h-6 w-auto shrink-0" />
           {!isCollapsed && (
             <span className="text-[18px] font-bold tracking-[0.1em] text-slate-900">
               TASKLY
@@ -158,22 +136,26 @@ export function Sidebar({
             href="/project"
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
-              pathname === '/project'
-                ? 'border border-card-border bg-white shadow-2xs'
+              isProjectsActive
+                ? 'border-card-border border bg-white shadow-2xs'
                 : 'hover:bg-white/60',
               isCollapsed && 'justify-center px-0'
             )}
             title={isCollapsed ? 'Projects' : undefined}
+            aria-label={isCollapsed ? 'Projects' : undefined}
           >
-            <Image
-              src="/icons/project.svg"
-              alt="Projects"
-              width={20}
-              height={20}
+            {/* Icon color follows `color` (SVG must use currentColor) */}
+            <ProjectIcon
               className="h-5 w-5 shrink-0"
+              style={{ color: projectsColor }}
             />
             {!isCollapsed && (
-              <span style={navTextStyle} className="text-slate-900">
+              <span
+                style={{
+                  ...navTextStyle, // Inter, 500, 14px, 20px, 0px, middle
+                  color: projectsColor,
+                }}
+              >
                 Projects
               </span>
             )}
@@ -185,19 +167,14 @@ export function Sidebar({
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
               pathname === '/statistics'
-                ? 'border border-card-border bg-white shadow-2xs'
+                ? 'border-card-border border bg-white shadow-2xs'
                 : 'hover:bg-white/60',
               isCollapsed && 'justify-center px-0'
             )}
             title={isCollapsed ? 'My Statistics' : undefined}
+            aria-label={isCollapsed ? 'My Statistics' : undefined}
           >
-            <Image
-              src="/icons/My Statistics.svg"
-              alt="My Statistics"
-              width={18}
-              height={18}
-              className="h-4.5 w-4.5 shrink-0"
-            />
+            <StatisticsIcon className="h-4.5 w-4.5 shrink-0" />
             {!isCollapsed && (
               <span style={navTextStyle} className="text-slate-900">
                 My Statistics
@@ -211,7 +188,7 @@ export function Sidebar({
           <div className="flex flex-col gap-3">
             <div
               className={cn(
-                'border-t border-card-border',
+                'border-card-border border-t',
                 isCollapsed && 'mx-auto w-8'
               )}
             />
@@ -219,21 +196,15 @@ export function Sidebar({
             {/* Section 3: Current Active Project Accordion & Collapsed Floating Popup */}
             {!isCollapsed ? (
               /* EXPANDED MODE: Accordion */
-              <div className="flex flex-col overflow-hidden rounded-[12px] border border-card-border">
+              <div className="border-card-border flex flex-col overflow-hidden rounded-[12px] border">
                 {/* Accordion Header */}
                 <button
                   type="button"
                   onClick={() => setIsAccordionOpen((prev) => !prev)}
-                  className="flex w-full items-center justify-between bg-input-bg p-3 text-left transition-colors hover:bg-input-bg-hover"
+                  className="bg-input-bg hover:bg-input-bg-hover flex w-full items-center justify-between p-3 text-left transition-colors"
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <Image
-                      src="/icons/folder.svg"
-                      alt="Active Project"
-                      width={18}
-                      height={18}
-                      className="h-4.5 w-4.5 shrink-0"
-                    />
+                    <FolderIcon className="h-4.5 w-4.5 shrink-0" />
                     <span
                       className="truncate text-[14px] leading-[20px] font-semibold text-slate-900"
                       title={activeProjectName || undefined}
@@ -270,7 +241,9 @@ export function Sidebar({
                           href={link.href}
                           className={cn(
                             'flex h-[40px] items-center gap-[12px] rounded-[40px] px-[16px] py-[10px] text-[14px] leading-[20px] font-medium text-slate-900 transition-colors',
-                            isSelected ? 'bg-surface-low' : 'hover:bg-surface-low/60'
+                            isSelected
+                              ? 'bg-surface-low'
+                              : 'hover:bg-surface-low/60'
                           )}
                         >
                           {link.icon}
@@ -289,24 +262,19 @@ export function Sidebar({
                   onClick={() => setIsPopupOpen((prev) => !prev)}
                   aria-label="Active project links popup"
                   className={cn(
-                    'flex h-11 w-11 items-center justify-center rounded-xl border border-card-border bg-input-bg text-slate-900 transition-all hover:bg-input-bg-hover',
-                    isPopupOpen && 'bg-input-bg-hover ring-2 ring-primary-container/50'
+                    'border-card-border bg-input-bg hover:bg-input-bg-hover flex h-11 w-11 items-center justify-center rounded-xl border text-slate-900 transition-all',
+                    isPopupOpen &&
+                      'bg-input-bg-hover ring-primary-container/50 ring-2'
                   )}
                   title={activeProjectName || 'Active Project Links'}
                 >
-                  <Image
-                    src="/icons/folder.svg"
-                    alt="Active Project"
-                    width={20}
-                    height={20}
-                    className="h-5 w-5"
-                  />
+                  <FolderIcon className="h-5 w-5" />
                 </button>
 
                 {/* Floating Popover Menu */}
                 {isPopupOpen && (
-                  <div className="animate-in fade-in zoom-in-95 absolute top-0 left-[64px] z-50 flex w-[246px] flex-col gap-[4px] rounded-l-[12px] rounded-r-[8px] border border-card-border bg-input-bg p-[8px] shadow-xl duration-150">
-                    <div className="px-3 py-1.5 text-xs font-bold text-slate-900 truncate border-b border-card-border/60 mb-1">
+                  <div className="animate-in fade-in zoom-in-95 border-card-border bg-input-bg absolute top-0 left-[64px] z-50 flex w-[246px] flex-col gap-[4px] rounded-l-[12px] rounded-r-[8px] border p-[8px] shadow-xl duration-150">
+                    <div className="border-card-border/60 mb-1 truncate border-b px-3 py-1.5 text-xs font-bold text-slate-900">
                       {activeProjectName}
                     </div>
                     {projectLinks.map((link) => {
@@ -337,22 +305,18 @@ export function Sidebar({
       </div>
 
       {/* Bottom Section: Collapse Toggle & Logout Buttons */}
-      <div className="mt-auto flex flex-col gap-2 border-t border-card-border pt-4">
+      <div className="border-card-border mt-auto flex flex-col gap-2 border-t pt-4">
         {/* Collapse Button */}
         <button
           type="button"
           onClick={onToggleCollapse}
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-slate-600 transition-colors hover:bg-card-border/60 hover:text-slate-900',
+            'hover:bg-card-border/60 flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-slate-600 transition-colors hover:text-slate-900',
             isCollapsed && 'justify-center px-0'
           )}
           title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <Image
-            src="/icons/Collapse.svg"
-            alt="Collapse"
-            width={12}
-            height={20}
+          <CollapseIcon
             className={cn(
               'h-4.5 w-auto shrink-0 transition-transform duration-300',
               isCollapsed && 'rotate-180'
@@ -367,7 +331,7 @@ export function Sidebar({
           onClick={handleLogout}
           disabled={isLoggingOut}
           className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-error transition-colors hover:bg-error-bg/50 disabled:cursor-not-allowed disabled:opacity-50',
+            'text-error hover:bg-error-bg/50 flex items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50',
             isCollapsed && 'justify-center px-0'
           )}
           title={
@@ -380,7 +344,7 @@ export function Sidebar({
         >
           {isLoggingOut ? (
             <svg
-              className="h-4.5 w-4.5 shrink-0 animate-spin text-error"
+              className="text-error h-4.5 w-4.5 shrink-0 animate-spin"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -400,13 +364,7 @@ export function Sidebar({
               />
             </svg>
           ) : (
-            <Image
-              src="/icons/logout.svg"
-              alt="Logout"
-              width={18}
-              height={18}
-              className="h-4.5 w-4.5 shrink-0"
-            />
+            <LogoutIcon className="h-4.5 w-4.5 shrink-0" />
           )}
           {!isCollapsed && (
             <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>

@@ -32,7 +32,7 @@ export function ProjectsList({
   const hasProjects = projects.length > 0;
 
   return (
-    <div className="@container flex flex-col gap-6">
+    <div className="@container flex flex-1 flex-col gap-6">
       {hasProjects ? (
         <>
           <div className="flex flex-row flex-wrap items-center justify-between gap-4">
@@ -60,7 +60,7 @@ export function ProjectsList({
             <AddProjectCard />
           </div>
 
-          <div className="mt-12 flex h-[112px] w-full items-center justify-center py-8 md:justify-end">
+          <div className="mt-auto flex min-h-10 w-full items-center justify-center pt-8 md:justify-end">
             <ProjectsPagination />
           </div>
 

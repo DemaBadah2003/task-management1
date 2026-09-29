@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { AuthenticatedLayout } from '@/src/components/layout/AuthenticatedLayout';
 import { CreateProjectForm } from '@/src/components/forms/create-project-form';
 
 export const metadata: Metadata = {
@@ -9,7 +8,6 @@ export const metadata: Metadata = {
 
 export default function AddProjectPage() {
   return (
-    <AuthenticatedLayout>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         {/* Page Breadcrumbs & Title: Hidden on mobile (hidden sm:flex) */}
         <div className="hidden flex-col gap-2 sm:flex">
@@ -31,6 +29,5 @@ export default function AddProjectPage() {
           <CreateProjectForm />
         </div>
       </div>
-    </AuthenticatedLayout>
   );
 }

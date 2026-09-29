@@ -46,7 +46,7 @@ function ChevronRightIcon() {
 }
 
 const boxBase =
-  'flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] border text-[15px] leading-none font-medium transition-colors';
+  'flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] border text-[14px] leading-5 font-medium transition-colors';
 
 export function ProjectsPagination({
   currentPage = 1,
@@ -55,12 +55,11 @@ export function ProjectsPagination({
   const pages: (number | '...')[] = [1, 2, 3, '...', totalPages];
 
   return (
-    // pt-4 انشالت من هون، صارت مضبوطة من الأب (mt-[138.5px])
-    <div className="hidden items-center justify-end gap-2 md:flex">
+    <div className="mt-auto hidden items-center justify-end gap-2 pt-6 md:flex">
       <button
         type="button"
         aria-label="Previous page"
-        className={`${boxBase} border-border-subtle bg-white text-surface-medium hover:bg-surface-low`}
+        className={`${boxBase} border-border-subtle text-surface-medium hover:bg-surface-low bg-white`}
       >
         <ChevronLeftIcon />
       </button>
@@ -69,7 +68,7 @@ export function ProjectsPagination({
         page === '...' ? (
           <span
             key={`ellipsis-${index}`}
-            className={`${boxBase} border-border-subtle bg-white text-surface-medium`}
+            className={`${boxBase} border-border-subtle text-surface-medium bg-white`}
           >
             ...
           </span>
@@ -81,7 +80,7 @@ export function ProjectsPagination({
             className={`${boxBase} ${
               page === currentPage
                 ? 'border-primary bg-primary text-white'
-                : 'border-border-subtle bg-white text-slate-900 hover:bg-surface-low'
+                : 'border-border-subtle hover:bg-surface-low bg-white text-slate-900'
             }`}
           >
             {page}
@@ -92,7 +91,7 @@ export function ProjectsPagination({
       <button
         type="button"
         aria-label="Next page"
-        className={`${boxBase} border-border-subtle bg-white text-surface-medium hover:bg-surface-low`}
+        className={`${boxBase} border-border-subtle text-surface-medium hover:bg-surface-low bg-white`}
       >
         <ChevronRightIcon />
       </button>

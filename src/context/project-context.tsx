@@ -1,6 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+} from 'react';
 import { usePathname } from 'next/navigation';
 import { getProjectsApi } from '@/src/lib/api/project';
 import type { Project } from '@/src/types/project';
@@ -27,7 +33,14 @@ export function extractProjectId(pathname: string): string | null {
   if (parts.length >= 2) {
     const candidateId = parts[1];
     // Exclude static non-id routes under /project/
-    const staticRoutes = ['add', 'epics', 'tasks', 'members', 'details', 'edit'];
+    const staticRoutes = [
+      'add',
+      'epics',
+      'tasks',
+      'members',
+      'details',
+      'edit',
+    ];
     if (!staticRoutes.includes(candidateId)) {
       return candidateId;
     }
@@ -45,36 +58,28 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch or update project info whenever activeProjectId changes
   useEffect(() => {
-    let isMounted = true;
-
     if (!activeProjectId) {
-      // Not inside a project route, reset active project
       setActiveProject(null);
       return;
     }
 
-    // If we already have the active project loaded for this ID, no need to re-fetch
-    if (activeProject && String(activeProject.id) === String(activeProjectId)) {
-      return;
-    }
-
+    let isMounted = true;
     setIsProjectLoading(true);
 
     getProjectsApi()
       .then((projects) => {
         if (!isMounted) return;
-        const found = projects.find((p) => String(p.id) === String(activeProjectId));
-        if (found) {
-          setActiveProject(found);
-        } else {
-          // Fallback if project is not in current list
-          setActiveProject({
+        const found = projects.find(
+          (p) => String(p.id) === String(activeProjectId)
+        );
+        setActiveProject(
+          found ?? {
             id: activeProjectId,
             name: `Project #${activeProjectId}`,
             description: '',
             createdAt: new Date().toISOString(),
-          });
-        }
+          }
+        );
       })
       .catch((err) => {
         if (!isMounted) return;
@@ -93,9 +98,11 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [activeProjectId, activeProject]);
+  }, [activeProjectId]); // ← بس activeProjectId
 
-  const activeProjectName = activeProject?.name || (activeProjectId ? `Project #${activeProjectId}` : null);
+  const activeProjectName =
+    activeProject?.name ||
+    (activeProjectId ? `Project #${activeProjectId}` : null);
 
   return (
     <ProjectContext.Provider

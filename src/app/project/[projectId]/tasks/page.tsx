@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AuthenticatedLayout } from "@/src/components/layout/AuthenticatedLayout";
 
 export const metadata: Metadata = {
   title: "Tasks · Taskly",
@@ -13,7 +12,6 @@ export default async function ProjectTasksPage({ params }: PageProps) {
   const { projectId } = await params;
 
   return (
-    <AuthenticatedLayout>
       <div className="flex flex-col gap-4 max-w-6xl mx-auto p-6">
         <h1 className="text-[24px] font-bold text-slate-900">Tasks</h1>
         <p className="text-[14px] text-slate-600">
@@ -25,6 +23,5 @@ export default async function ProjectTasksPage({ params }: PageProps) {
           </span>
         </div>
       </div>
-    </AuthenticatedLayout>
   );
 }
