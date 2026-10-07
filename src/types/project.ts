@@ -4,3 +4,7 @@ export interface Project {
   description: string;
   createdAt: string;
 }
+export interface ProjectsResponse {
+  projects: Project[];
+  totalCount?: number;
+}

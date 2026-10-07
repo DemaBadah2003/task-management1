@@ -78,7 +78,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
       {/* Title + description */}
       <div className="flex min-w-0 flex-col gap-2">
         <h3 className="line-clamp-2 text-[18px] leading-7 font-semibold break-words text-[var(--color-slate-900)]">
-          {project.name} II
+          {project.name} 
         </h3>
         <p className="line-clamp-3 text-[14px] leading-[22.75px] font-normal break-words text-[var(--color-slate-500)]">
           {project.description}

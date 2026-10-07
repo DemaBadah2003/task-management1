@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { UserProvider } from "@/src/context/user-context";
-import { ProjectProvider } from "@/src/context/project-context";
-import { Navbar } from "@/src/components/layout/Navbar";
-import { Sidebar } from "@/src/components/layout/Sidebar";
-import { MobileNavigation } from "@/src/components/layout/MobileNavigation";
+import React, { useState } from 'react';
+import { UserProvider } from '@/src/context/user-context';
+import { ProjectProvider } from '@/src/context/project-context';
+import { Navbar } from '@/src/components/layout/Navbar';
+import { Sidebar } from '@/src/components/layout/Sidebar';
+import { MobileNavigation } from '@/src/components/layout/MobileNavigation';
 
 export function AuthenticatedLayout({
   children,
@@ -18,9 +18,9 @@ export function AuthenticatedLayout({
   return (
     <UserProvider>
       <ProjectProvider>
-        <div className="flex h-screen w-full overflow-hidden bg-background">
+        <div className="bg-background flex h-screen w-full overflow-hidden">
           {/* Desktop Sidebar (hidden on mobile/tablet screens < 768px) */}
-          <div className="hidden md:flex shrink-0 h-full">
+          <div className="hidden h-full shrink-0 md:flex">
             <Sidebar
               isCollapsed={isSidebarCollapsed}
               onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
@@ -28,7 +28,7 @@ export function AuthenticatedLayout({
           </div>
 
           {/* Main View Area (Header + Scrollable Page Content) */}
-          <div className="flex flex-1 flex-col h-full min-w-0 overflow-hidden">
+          <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
             {/* Top Navbar */}
             <Navbar
               isSidebarCollapsed={isSidebarCollapsed}
@@ -36,7 +36,7 @@ export function AuthenticatedLayout({
             />
 
             {/* Page Content Viewport */}
-            <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 pb-24 md:pb-8">
+            <main className="flex min-h-0 flex-1 flex-col overflow-y-auto p-4 pb-24 sm:p-6 md:p-8 md:pb-8">
               {children}
             </main>
           </div>

@@ -1,53 +1,78 @@
-import Link from 'next/link';
-import CreateEpicForm from '@/src/components/epics/CreateEpicForm';
+import { redirect } from 'next/navigation';
+import EpicsHeader from '@/src/components/epics/EpicsHeader';
+import EpicCard from '@/src/components/epics/EpicCard';
+import { fetchEpics, EpicsFetchError } from '@/src/lib/epics';
+import { PAGE_SIZE } from '@/src/lib/pagination';
+import type { EpicsResponse } from '@/src/types/epic';
 
-export default async function EpicsPage({
-  params,
-}: {
+export const dynamic = 'force-dynamic';
+
+// TODO: اسم المشروع الحقيقي من الـ API
+const PROJECT_NAME = 'Rafiq';
+
+type Props = {
   params: Promise<{ projectId: string }>;
-}) {
+  searchParams: Promise<{ page?: string; q?: string }>;
+};
+
+function parsePage(value?: string): number {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 ? n : 1;
+}
+
+export default async function EpicsPage({ params, searchParams }: Props) {
   const { projectId } = await params;
+  const sp = await searchParams;
+  const page = parsePage(sp.page);
+  const query = sp.q?.trim() || undefined;
+  const basePath = `/project/${projectId}/epics`;
+
+  let data: EpicsResponse | null = null;
+  let unauthorized = false;
+
+  try {
+    data = await fetchEpics({
+      projectId,
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+      q: query,
+    });
+  } catch (err) {
+    unauthorized = err instanceof EpicsFetchError && err.status === 401;
+  }
+
+  if (unauthorized) redirect('/login');
+
+  const totalPages = Math.ceil((data?.totalCount ?? 0) / PAGE_SIZE);
+  if (data && totalPages > 0 && page > totalPages) {
+    redirect(totalPages === 1 ? basePath : `${basePath}?page=${totalPages}`);
+  }
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-6 md:px-8">
-      {/* Breadcrumbs - مخفي في الموبايل ويظهر في الشاشات المتوسطة والأكبر (Desktop) */}
-      <div className="mb-4 hidden items-center gap-2 text-[12px] font-semibold tracking-[0.3px] uppercase md:flex">
-        <Link href="/projects" className="text-[#434654]/95 hover:underline">
-          Projects
-        </Link>
-        <span className="text-[#434654]/60">/</span>
-        <Link
-          href={`/project/${projectId}`}
-          className="text-[#434654]/95 hover:underline"
-        >
-          Project Alpha
-        </Link>
-        <span className="text-[#434654]/60">/</span>
-        <Link
-          href={`/project/${projectId}/epics`}
-          className="text-[#434654]/95 hover:underline"
-        >
-          Epics
-        </Link>
-        <span className="text-[#434654]/60">/</span>
-        <span className="text-[#041B3C]">New Epic</span>
-      </div>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-6 md:px-8">
+      <EpicsHeader
+        projectId={projectId}
+        projectName={PROJECT_NAME}
+        query={query}
+      />
 
-      {/* Header Titles */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-[36px] leading-[40px] font-bold tracking-[-0.9px] text-[#041B3C]">
-          Create New Epic
-        </h1>
-        <p className="text-[16px] leading-[24px] font-normal text-[#434654]">
-          Define a major project phase or high-level milestone to group related
-          tasks and track architectural progress.
+      {data === null ? (
+        <p role="alert" className="text-sm text-[#BA1A1A]">
+          Couldn&apos;t load epics. Refresh the page to try again.
         </p>
-      </div>
-
-      {/* Form Component */}
-      <div className="mt-8">
-        <CreateEpicForm projectId={projectId} />
-      </div>
+      ) : data.epics.length === 0 ? (
+        <p className="text-sm text-[#434654]">
+          {query
+            ? `No epics match "${query}".`
+            : 'No epics yet. Create the first one with New Epic.'}
+        </p>
+      ) : (
+        <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {data.epics.map((epic) => (
+            <EpicCard key={epic.id} epic={epic} />
+          ))}
+        </section>
+      )}
     </div>
   );
 }
