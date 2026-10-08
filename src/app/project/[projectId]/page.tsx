@@ -1,10 +1,12 @@
-import { redirect } from 'next/navigation';
+import TasksBoard from '@/src/components/tasks/TasksBoard';
+import TasksPageHeader from '@/src/components/tasks/TasksPageHeader';
 
-interface PageProps {
-  params: Promise<{ projectId: string }>;
-}
-
-export default async function ProjectIdIndexPage({ params }: PageProps) {
-  const { projectId } = await params;
-  redirect(`/project/${projectId}/epics`);
+export default function TasksPage() {
+  return (
+    <div className="flex flex-col gap-6 p-4 md:p-8">
+      <TasksPageHeader />
+      {/* لا يوجد fetch ولا mock data: كل الأعمدة فارغة */}
+      <TasksBoard />
+    </div>
+  );
 }

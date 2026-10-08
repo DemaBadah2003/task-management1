@@ -1,27 +1,13 @@
-import type { Metadata } from "next";
+import TasksBoard from '@/src/components/tasks/TasksBoard';
+import TasksPageHeader from '@/src/components/tasks/TasksPageHeader';
 
-export const metadata: Metadata = {
-  title: "Tasks · Taskly",
-};
-
-interface PageProps {
-  params: Promise<{ projectId: string }>;
-}
-
-export default async function ProjectTasksPage({ params }: PageProps) {
-  const { projectId } = await params;
-
+export default function TasksPage() {
   return (
-      <div className="flex flex-col gap-4 max-w-6xl mx-auto p-6">
-        <h1 className="text-[24px] font-bold text-slate-900">Tasks</h1>
-        <p className="text-[14px] text-slate-600">
-          Active Project Tasks (Project ID: {projectId}).
-        </p>
-        <div className="rounded-2xl bg-white p-6 border border-card-border">
-          <span className="text-[14px] font-semibold text-slate-900">
-            Task management list placeholder.
-          </span>
-        </div>
-      </div>
+    // min-w-0 + w-full: ضروريان حتى يعمل الـ scroll الأفقي داخل الـ layout
+    <div className="flex w-full min-w-0 flex-col gap-6 p-4 md:p-8">
+      <TasksPageHeader />
+      {/* لا يوجد fetch ولا mock data: كل الأعمدة فارغة */}
+      <TasksBoard />
+    </div>
   );
 }

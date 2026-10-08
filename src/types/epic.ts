@@ -1,12 +1,20 @@
-// ادمجها مع الموجود عندك في src/types/epic.ts (عدّل الحقول حسب الـ API الفعلي)
+export interface EpicUser {
+  sub: string;
+  name: string;
+  email?: string;
+  department?: string;
+  avatar_url?: string | null;
+}
+
 export interface Epic {
   id: string;
-  code?: string; // EPIC-102
+  epic_id: string;
   title: string;
   description?: string | null;
-  assignee?: { id: string; name: string } | null;
-  creator?: { id: string; name: string } | null;
-  created_at: string; // ISO date
+  deadline?: string | null;
+  created_at: string;
+  created_by?: EpicUser | null;
+  assignee?: EpicUser | null;
 }
 
 export interface EpicsResponse {
