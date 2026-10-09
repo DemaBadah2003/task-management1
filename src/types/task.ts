@@ -1,23 +1,49 @@
-export type TaskStatusKey =
-  | "todo"
-  | "in_progress"
-  | "blocked"
-  | "in_review"
-  | "ready_for_qa"
-  | "reopened"
-  | "ready_for_prod"
-  | "done";
+export type TaskStatus =
+  | "TO_DO"
+  | "IN_PROGRESS"
+  | "BLOCKED"
+  | "IN_REVIEW"
+  | "READY_FOR_QA"
+  | "REOPENED"
+  | "READY_FOR_PRODUCTION"
+  | "DONE";
 
-// نوع مبدئي، يتم توسيعه عند ربط الـ API لاحقاً
 export interface Task {
   id: string;
+  project_id: string;
+  epic_id: string | null;
   title: string;
-  status: TaskStatusKey;
+  description: string | null;
+  assignee_id: string | null;
+  due_date: string | null; // ISO timestamp
+  status: TaskStatus;
+}
+
+// جسم طلب POST /rest/v1/tasks (الحقول الاختيارية تُحذف إن كانت فارغة)
+export interface CreateTaskPayload {
+  project_id: string;
+  title: string;
+  status: TaskStatus;
+  epic_id?: string;
+  description?: string;
+  assignee_id?: string;
+  due_date?: string;
 }
 
 export interface TaskStatusConfig {
-  key: TaskStatusKey;
-  label: string;
-  dotClass: string;   // لون النقطة
-  badgeClass: string; // لون شارة العدد
+  key: TaskStatus;
+  label: string; // العنوان في رأس عمود اللوحة (حسب Figma)
+  dotClass: string;
+  badgeClass: string;
+}
+
+export interface ProjectEpic {
+  id: string;
+  title: string;
+}
+
+export interface ProjectMember {
+  user_id: string;
+  full_name?: string | null;
+  email?: string | null;
 }

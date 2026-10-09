@@ -2,30 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { useAccessToken } from "@/src/hooks/useAccessToken";
-import { fetchProjectMembers } from "@/src/lib/tasks-api";
-import type { ProjectMember } from "@/src/types/task";
+import { fetchProjectEpics } from "@/src/lib/tasks-api";
+import type { ProjectEpic } from "@/src/types/task";
 
-export default function useProjectMembers(projectId: string) {
+export default function useTaskFormEpics(projectId: string) {
   const { token, loading: tokenLoading } = useAccessToken();
-  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [epics, setEpics] = useState<ProjectEpic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (tokenLoading) return;
-
     if (!token) {
       setIsLoading(false);
       setError("Your session has expired. Please log in again.");
       return;
     }
-
     const controller = new AbortController();
     setIsLoading(true);
     setError(null);
 
-    fetchProjectMembers(projectId, token, controller.signal)
-      .then(setMembers)
+    fetchProjectEpics(projectId, token, controller.signal)
+      .then(setEpics)
       .catch((err) => {
         if (err.name !== "AbortError") setError(err.message);
       })
@@ -36,5 +34,5 @@ export default function useProjectMembers(projectId: string) {
     return () => controller.abort();
   }, [projectId, token, tokenLoading]);
 
-  return { members, isLoading, error };
+  return { epics, isLoading, error };
 }
