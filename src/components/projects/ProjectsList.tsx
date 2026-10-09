@@ -100,8 +100,7 @@ export function ProjectsList({
       const data: ProjectsResponse = await res.json();
 
       // ✱ حدّث العدد الكلي من الـ response
-      setTotal(data.totalCount);
-
+      setTotal(data.totalCount ?? 0);
       // ✱ رجع فاضي → خلصت المشاريع
       if (data.projects.length === 0) {
         setExhausted(true);

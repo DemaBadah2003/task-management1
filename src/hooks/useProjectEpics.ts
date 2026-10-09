@@ -55,13 +55,16 @@ export function useProjectEpics(
       return () => controller.abort();
     }
 
+    // ✱ نسخة ثابتة من نوع string عشان TypeScript يعرف إنها مش null داخل loadPage
+    const sessionToken: string = token;
+
     let isActive = true;
 
     async function loadPage() {
       try {
         const response = await getProjectEpics(
           projectId,
-          token,
+          sessionToken,
           (currentPage - 1) * PAGE_SIZE,
           PAGE_SIZE,
           controller.signal,
