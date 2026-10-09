@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useProjectMembers } from '@/src/hooks/useProjectMembers';
+import useProjectMembers from '@/src/hooks/useProjectMembers';
 import { MembersHeader } from './MembersHeader';
 import { MembersList } from './MembersList';
 import { MembersLoadingSkeleton } from './MembersLoadingSkeleton';

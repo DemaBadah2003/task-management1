@@ -1,40 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAccessToken } from "@/src/hooks/useAccessToken";
-import { fetchProjectMembers } from "@/src/lib/tasks-api";
-import type { ProjectMember } from "@/src/types/task";
+import { fetchProjectMembersView } from "@/src/lib/members-api";
+import type { ProjectMember } from "@/src/types/member";
+
+export type MembersStatus = "loading" | "error" | "success";
 
 export default function useProjectMembers(projectId: string) {
   const { token, loading: tokenLoading } = useAccessToken();
   const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState<MembersStatus>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const retry = useCallback(() => {
+    setReloadKey((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     if (tokenLoading) return;
 
     if (!token) {
-      setIsLoading(false);
       setError("Your session has expired. Please log in again.");
+      setStatus("error");
       return;
     }
 
     const controller = new AbortController();
-    setIsLoading(true);
+    setStatus("loading");
     setError(null);
 
-    fetchProjectMembers(projectId, token, controller.signal)
-      .then(setMembers)
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err.message);
+    fetchProjectMembersView(projectId, token, controller.signal)
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        setMembers(data);
+        setStatus("success");
       })
-      .finally(() => {
-        if (!controller.signal.aborted) setIsLoading(false);
+      .catch((err) => {
+        if (err.name === "AbortError") return;
+        setError(err.message ?? "Something went wrong");
+        setStatus("error");
       });
 
     return () => controller.abort();
-  }, [projectId, token, tokenLoading]);
+  }, [projectId, token, tokenLoading, reloadKey]);
 
-  return { members, isLoading, error };
+  return { members, status, error, retry };
 }
