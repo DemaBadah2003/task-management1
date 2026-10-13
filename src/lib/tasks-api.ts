@@ -67,3 +67,32 @@ export async function createTask(
   const data = await res.json();
   return Array.isArray(data) ? data[0] : data;
 }
+
+export async function fetchEpicTasks(
+  projectId: string,
+  epicId: string,
+  accessToken: string,
+  signal?: AbortSignal,
+): Promise<Task[]> {
+  const url = new URL(`${SUPABASE_URL}/rest/v1/tasks`);
+  url.searchParams.set(
+    "select",
+    "id,project_id,epic_id,title,description,assignee_id,due_date,status",
+  );
+  url.searchParams.set("project_id", `eq.${projectId}`);
+  url.searchParams.set("epic_id", `eq.${epicId}`);
+  url.searchParams.set("order", "due_date.asc.nullslast");
+
+  const res = await fetch(url, {
+    headers: buildHeaders(accessToken),
+    signal,
+  });
+  if (!res.ok) throw new Error(await readError(res, "Failed to load epic tasks"));
+
+  const tasks: unknown = await res.json();
+  if (!Array.isArray(tasks)) {
+    throw new Error("The epic tasks response was invalid");
+  }
+
+  return tasks as Task[];
+}

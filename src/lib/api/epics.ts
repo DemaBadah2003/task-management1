@@ -136,6 +136,48 @@ export type CreateEpicPayload = {
   deadline?: string; // YYYY-MM-DD
 };
 
+export type UpdateEpicPayload = Partial<{
+  title: string;
+  description: string | null;
+  assignee_id: string | null;
+  deadline: string | null;
+}>;
+
+export async function updateEpicField(
+  projectId: string,
+  epicId: string,
+  token: string,
+  payload: UpdateEpicPayload,
+  signal?: AbortSignal,
+): Promise<void> {
+  const url = new URL(`${BASE_URL}/rest/v1/epics`);
+  url.searchParams.set('id', `eq.${epicId}`);
+  url.searchParams.set('project_id', `eq.${projectId}`);
+
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      apikey: API_KEY,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify(payload),
+    signal,
+  });
+
+  if (!response.ok) {
+    let message = 'Failed to update epic. Please try again.';
+    try {
+      const err = await response.json();
+      if (err?.message) message = err.message;
+    } catch {
+      // Ignore non-JSON error responses and use the default message.
+    }
+    throw new ApiError(message, response.status);
+  }
+}
+
 export async function createEpic(
   payload: CreateEpicPayload,
   token: string,

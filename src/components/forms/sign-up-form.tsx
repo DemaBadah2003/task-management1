@@ -15,6 +15,9 @@ import {
   type SignUpFormValues,
 } from '@/src/lib/validations/sign-up-schema';
 import { signUp, ApiError } from '@/src/lib/api/auth';
+
+
+
 export function SignUpForm() {
   const router = useRouter();
   const [apiError, setApiError] = useState<string | null>(null);
@@ -27,12 +30,8 @@ export function SignUpForm() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm<SignUpFormValues>({
+  const { register,handleSubmit,watch,formState: { errors, isSubmitting }, } =
+   useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
     mode: 'onTouched',
     defaultValues: {

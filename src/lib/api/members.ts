@@ -11,12 +11,16 @@ export class ApiError extends Error {
 
 const BASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const API_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const projectMembersCache = new Map<string, ProjectMember[]>();
 
 export async function fetchProjectMembers(
   projectId: string,
   token: string,
   signal?: AbortSignal
 ): Promise<ProjectMember[]> {
+  const cachedMembers = projectMembersCache.get(projectId);
+  if (cachedMembers) return cachedMembers;
+
   const response = await fetch(
     `${BASE_URL}/rest/v1/get_project_members?project_id=eq.${encodeURIComponent(projectId)}`,
     {
@@ -35,7 +39,7 @@ export async function fetchProjectMembers(
 
   const rows: ProjectMemberRow[] = await response.json();
 
-  return rows.map((row: any) => {
+  const members = rows.map((row: any) => {
     // محاولة استخراج الاسم من الحقول المتاحة، أو استنتاجه من الإيميل قبل "@" كحل بديل
     let derivedName = 
       row.full_name || 
@@ -58,5 +62,8 @@ export async function fetchProjectMembers(
       avatarUrl: row.avatar_url || null,
       role: (row.role as ProjectMember['role']) || 'member',
     };
-  });
+  }).filter((member) => member.id);
+
+  projectMembersCache.set(projectId, members);
+  return members;
 }
