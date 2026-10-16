@@ -2,13 +2,103 @@ import { getSessionToken } from "./user";
 import { ApiError } from "./auth";
 import type { Project } from "@/src/types/project";
 
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://pwxmbbdntmvsiiyzhlmh.supabase.co";
+function getSupabaseConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-  "sb_publishable_chMoTDsN_gy2m1MK0KbCmA_GBICEBn9";
+  if (!url || !anonKey) {
+    throw new ApiError(
+      "Supabase configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+    );
+  }
+
+  return { url, anonKey };
+}
+
+function buildHeaders(
+  anonKey: string,
+  token: string | null,
+  prefer?: string
+): HeadersInit {
+  return {
+    "Content-Type": "application/json",
+    apikey: anonKey,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(prefer ? { Prefer: prefer } : {}),
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+async function request(
+  input: RequestInfo | URL,
+  init: RequestInit
+): Promise<Response> {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    const detail = error instanceof Error ? `: ${error.message}` : "";
+    throw new ApiError(`Network request failed${detail}`);
+  }
+}
+
+async function readErrorMessage(
+  response: Response,
+  fallback: string
+): Promise<string> {
+  if (response.status === 401) {
+    return "Your session has expired. Please sign in again.";
+  }
+
+  try {
+    const body: unknown = await response.json();
+    if (isRecord(body)) {
+      for (const field of ["message", "msg", "error_description"]) {
+        const value = body[field];
+        if (typeof value === "string" && value.length > 0) return value;
+      }
+    }
+  } catch {
+    // Some API errors have no JSON body.
+  }
+
+  return fallback;
+}
+
+async function readJson(response: Response, description: string): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch {
+    throw new ApiError(
+      `The ${description} response was not valid JSON.`,
+      response.status
+    );
+  }
+}
+
+function mapProject(value: unknown): Project {
+  if (
+    !isRecord(value) ||
+    (typeof value.id !== "string" && typeof value.id !== "number")
+  ) {
+    throw new ApiError("The projects response contained an invalid project.");
+  }
+
+  const createdAt = value.created_at ?? value.createdAt;
+  return {
+    id: String(value.id),
+    name:
+      typeof value.name === "string" && value.name
+        ? value.name
+        : "Untitled Project",
+    description:
+      typeof value.description === "string" ? value.description : "",
+    createdAt:
+      typeof createdAt === "string" && createdAt.trim() ? createdAt : null,
+  };
+}
 
 export interface CreateProjectPayload {
   name: string;
@@ -16,195 +106,131 @@ export interface CreateProjectPayload {
 }
 
 export interface UpdateProjectPayload {
-  id?: string;
+  id: string;
   name: string;
   description?: string;
 }
 
-// 1. دالة إنشاء مشروع جديد
-export async function createProjectApi(payload: CreateProjectPayload): Promise<any> {
-  const token = getSessionToken();
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "apikey": SUPABASE_ANON_KEY,
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/projects`, {
+export async function createProjectApi(
+  payload: CreateProjectPayload
+): Promise<void> {
+  const { url, anonKey } = getSupabaseConfig();
+  const response = await request(`${url}/rest/v1/projects`, {
     method: "POST",
-    headers,
+    headers: buildHeaders(anonKey, getSessionToken()),
     body: JSON.stringify({
       name: payload.name,
-      ...(payload.description !== undefined ? { description: payload.description } : {}),
+      ...(payload.description !== undefined
+        ? { description: payload.description }
+        : {}),
     }),
   });
 
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => null);
-    const errorMessage =
-      errorBody?.message ||
-      errorBody?.msg ||
-      errorBody?.error_description ||
-      "Failed To Add New Project, Try Again Later";
-    throw new ApiError(errorMessage);
-  }
-
-  const resText = await response.text();
-  try {
-    return JSON.parse(resText);
-  } catch {
-    return { success: true };
+    throw new ApiError(
+      await readErrorMessage(
+        response,
+        "Failed to add new project. Try again later."
+      ),
+      response.status
+    );
   }
 }
 
-// 2. دالة جلب المشاريع (مضافة حديثاً لتعمل مع صفحة القائمة والكاردات)
 export async function getProjectsApi(): Promise<Project[]> {
-  const token = getSessionToken();
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "apikey": SUPABASE_ANON_KEY,
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  // محاولة جلب المشاريع من RPC المذكور بالـ Requirement أولاً، ثم الـ Table كاحتيطي
-  let response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_projects`, {
-    method: "GET",
-    headers,
-  });
-
-  if (response.status === 404 || !response.ok) {
-    // إذا لم يتوفر الـ RPC، نستخدم الجدول مباشرة
-    const tableRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/projects?select=*&order=created_at.desc`,
-      { method: "GET", headers }
-    );
-    if (tableRes.ok || response.status === 404) {
-      response = tableRes;
-    }
-  }
+  const { url, anonKey } = getSupabaseConfig();
+  const headers = buildHeaders(anonKey, getSessionToken());
+  const response = await request(
+    `${url}/rest/v1/projects?select=*&order=created_at.desc`,
+    { method: "GET", headers }
+  );
 
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => null);
-    const errorMessage =
-      errorBody?.message ||
-      errorBody?.msg ||
-      errorBody?.error_description ||
-      "Failed to fetch projects";
-    const err = new ApiError(errorMessage);
-    (err as any).status = response.status;
-    throw err;
+    throw new ApiError(
+      await readErrorMessage(response, "Failed to fetch projects."),
+      response.status
+    );
   }
 
-  const resText = await response.text();
-  try {
-    const data = JSON.parse(resText);
-    
-    return (data || []).map((item: any) => ({
-      id: String(item.id),
-      name: item.name || "Untitled Project",
-      description: item.description || "",
-      createdAt: item.created_at || item.createdAt || new Date().toISOString(),
-    }));
-  } catch (err) {
-    console.error("Failed to parse projects:", err);
-    return [];
+  const data = await readJson(response, "projects");
+  if (!Array.isArray(data)) {
+    throw new ApiError("The projects response was not a list.", response.status);
   }
+
+  return data.map(mapProject);
 }
 
-// 3. دالة جلب مشروع محدد بواسطة الـ ID
 export async function getProjectByIdApi(id: string): Promise<Project> {
-  const token = getSessionToken();
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "apikey": SUPABASE_ANON_KEY,
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  try {
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/projects?id=eq.${id}&select=*`,
-      { method: "GET", headers }
-    );
-
-    if (response.ok) {
-      const resText = await response.text();
-      const data = JSON.parse(resText);
-      if (Array.isArray(data) && data.length > 0) {
-        const item = data[0];
-        return {
-          id: String(item.id),
-          name: item.name || "Untitled Project",
-          description: item.description || "",
-          createdAt: item.created_at || item.createdAt || new Date().toISOString(),
-        };
-      }
+  const { url, anonKey } = getSupabaseConfig();
+  const response = await request(
+    `${url}/rest/v1/projects?id=eq.${encodeURIComponent(id)}&select=*`,
+    {
+      method: "GET",
+      headers: buildHeaders(anonKey, getSessionToken()),
     }
-  } catch {
-    // Fall back to getProjectsApi list below
-  }
-
-  // Fallback: search in getProjectsApi
-  const projects = await getProjectsApi();
-  const found = projects.find((p) => String(p.id) === String(id));
-  if (found) {
-    return found;
-  }
-
-  throw new ApiError("Project not found");
-}
-
-// 4. دالة تحديث المشروع
-export async function updateProjectApi(payload: UpdateProjectPayload): Promise<any> {
-  const token = getSessionToken();
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "apikey": SUPABASE_ANON_KEY,
-  };
-
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const url = payload.id
-    ? `${SUPABASE_URL}/rest/v1/projects?id=eq.${payload.id}`
-    : `${SUPABASE_URL}/rest/v1/projects`;
-
-  const response = await fetch(url, {
-    method: payload.id ? "PATCH" : "POST",
-    headers,
-    body: JSON.stringify({
-      name: payload.name,
-      ...(payload.description !== undefined ? { description: payload.description } : {}),
-    }),
-  });
+  );
 
   if (!response.ok) {
-    const errorBody = await response.json().catch(() => null);
-    const errorMessage =
-      errorBody?.message ||
-      errorBody?.msg ||
-      errorBody?.error_description ||
-      "Failed to update project";
-    throw new ApiError(errorMessage);
+    throw new ApiError(
+      await readErrorMessage(response, "Failed to fetch project."),
+      response.status
+    );
   }
 
-  const resText = await response.text();
-  try {
-    return JSON.parse(resText);
-  } catch {
-    return { success: true };
+  const data = await readJson(response, "project");
+  if (!Array.isArray(data)) {
+    throw new ApiError("The project response was not a list.", response.status);
+  }
+  if (data.length === 0) {
+    throw new ApiError("Project not found.", 404);
+  }
+
+  return mapProject(data[0]);
+}
+
+export async function updateProjectApi(
+  payload: UpdateProjectPayload
+): Promise<void> {
+  if (!payload.id.trim()) {
+    throw new ApiError("A project ID is required to update a project.");
+  }
+
+  const { url, anonKey } = getSupabaseConfig();
+  const response = await request(
+    `${url}/rest/v1/projects?id=eq.${encodeURIComponent(payload.id)}`,
+    {
+      method: "PATCH",
+      headers: buildHeaders(
+        anonKey,
+        getSessionToken(),
+        "return=representation"
+      ),
+      body: JSON.stringify({
+        name: payload.name,
+        ...(payload.description !== undefined
+          ? { description: payload.description }
+          : {}),
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new ApiError(
+      await readErrorMessage(response, "Failed to update project."),
+      response.status
+    );
+  }
+
+  const data = await readJson(response, "project update");
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new ApiError(
+      "The project was not updated. It may not exist or you may not have permission to edit it.",
+      404
+    );
+  }
+
+  const updatedProject = mapProject(data[0]);
+  if (updatedProject.id !== payload.id) {
+    throw new ApiError("The update response did not match the requested project.");
   }
 }

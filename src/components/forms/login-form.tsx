@@ -65,7 +65,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="border-card-border mx-auto flex w-full flex-col rounded-[8px] border bg-white p-6 shadow-[0px_24px_48px_rgba(4,27,60,0.06)] sm:w-[480px] sm:max-w-[480px] sm:p-[48px]">
+    <div className="border-card-border mx-auto flex w-full flex-col rounded-[8px] border bg-white p-6 shadow-[0px_24px_48px_rgba(4,27,60,0.06)] sm:h-[586px] sm:w-[480px] sm:max-w-[480px] sm:p-[48px]">
       {/* Header */}
       <div className="mb-10 flex flex-col items-center text-center">
         <h1 className="sm:text-headline-lg text-2xl leading-8 font-semibold tracking-tight text-slate-900 sm:leading-[36px]">

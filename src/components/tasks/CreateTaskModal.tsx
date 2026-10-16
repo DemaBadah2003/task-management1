@@ -16,6 +16,7 @@ import type { CreateTaskPayload, Task, TaskStatus } from '@/src/types/task';
 interface CreateTaskModalProps {
   projectId: string;
   initialEpicId: string | null;
+  initialStatus: TaskStatus | null;
   onClose: () => void;
   onCreated: (task: Task) => void;
 }
@@ -28,6 +29,7 @@ const controlClass =
 export default function CreateTaskModal({
   projectId,
   initialEpicId,
+  initialStatus,
   onClose,
   onCreated,
 }: CreateTaskModalProps) {
@@ -37,7 +39,9 @@ export default function CreateTaskModal({
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<TaskStatus>(DEFAULT_TASK_STATUS);
+  const [status, setStatus] = useState<TaskStatus>(
+    initialStatus ?? DEFAULT_TASK_STATUS,
+  );
   const [assigneeId, setAssigneeId] = useState('');
   const [epicId, setEpicId] = useState(initialEpicId ?? '');
   const [dueDate, setDueDate] = useState('');

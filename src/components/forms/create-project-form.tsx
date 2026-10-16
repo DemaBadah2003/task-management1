@@ -10,6 +10,7 @@ import {
   type CreateProjectFormValues,
 } from '@/src/lib/validations/project-schema';
 import { createProjectApi } from '@/src/lib/api/project';
+import { ApiError } from '@/src/lib/api/auth';
 import { cn } from '@/src/lib/utils';
 
 export function CreateProjectForm() {
@@ -46,6 +47,10 @@ export function CreateProjectForm() {
       router.push('/project');
     } catch (err) {
       console.error('Create project error:', err);
+      if (err instanceof ApiError && err.status === 401) {
+        router.replace('/login');
+        return;
+      }
       setApiError('Failed To Add New Project, Try Again Later');
     }
   }

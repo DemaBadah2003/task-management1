@@ -1,12 +1,17 @@
 import TasksBoard from '@/src/components/tasks/TasksBoard';
 import TasksPageHeader from '@/src/components/tasks/TasksPageHeader';
 
-export default function TasksPage() {
+interface ProjectPageProps {
+  params: Promise<{ projectId: string }>;
+}
+
+export default async function ProjectPage({ params }: ProjectPageProps) {
+  const { projectId } = await params;
+
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-8">
+    <div className="flex w-full min-w-0 flex-col gap-6 p-4 md:p-8">
       <TasksPageHeader />
-      {/* لا يوجد fetch ولا mock data: كل الأعمدة فارغة */}
-      <TasksBoard />
+      <TasksBoard projectId={projectId} />
     </div>
   );
 }

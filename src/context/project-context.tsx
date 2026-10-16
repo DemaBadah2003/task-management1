@@ -7,8 +7,9 @@ import React, {
   useState,
   useMemo,
 } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { getProjectsApi } from '@/src/lib/api/project';
+import { ApiError } from '@/src/lib/api/auth';
 import type { Project } from '@/src/types/project';
 
 interface ProjectContextType {
@@ -50,6 +51,7 @@ export function extractProjectId(pathname: string): string | null {
 
 export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [isProjectLoading, setIsProjectLoading] = useState(false);
 
@@ -77,18 +79,23 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
             id: activeProjectId,
             name: `Project #${activeProjectId}`,
             description: '',
-            createdAt: new Date().toISOString(),
+            createdAt: null,
           }
         );
       })
       .catch((err) => {
         if (!isMounted) return;
         console.error('Failed to fetch project details for context:', err);
+        if (err instanceof ApiError && err.status === 401) {
+          setActiveProject(null);
+          router.replace('/login');
+          return;
+        }
         setActiveProject({
           id: activeProjectId,
           name: `Project #${activeProjectId}`,
           description: '',
-          createdAt: new Date().toISOString(),
+          createdAt: null,
         });
       })
       .finally(() => {
@@ -98,7 +105,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [activeProjectId]); // ← بس activeProjectId
+  }, [activeProjectId, router]);
 
   const activeProjectName =
     activeProject?.name ||

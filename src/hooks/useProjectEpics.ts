@@ -137,6 +137,30 @@ export function useProjectEpics(
     setMoreError(false);
   }, []);
 
+  const updateEpic = useCallback(
+    (epicId: string, updates: Partial<Epic>) => {
+      setResult((previous) => {
+        if (
+          !previous ||
+          previous.projectId !== projectId ||
+          previous.status !== 'success'
+        ) {
+          return previous;
+        }
+
+        let found = false;
+        const epics = previous.epics.map((epic) => {
+          if (epic.id !== epicId) return epic;
+          found = true;
+          return { ...epic, ...updates };
+        });
+
+        return found ? { ...previous, epics } : previous;
+      });
+    },
+    [projectId],
+  );
+
   const loadMore = useCallback(async () => {
     const currentResult =
       result?.projectId === projectId &&
@@ -256,6 +280,7 @@ export function useProjectEpics(
     moreError,
     setPage,
     retry,
+    updateEpic,
     loadMore,
   } as const;
 }

@@ -1,23 +1,51 @@
 import type {
-  ApiErrorResponse,
   LoginRequest,
   LoginSuccessResponse,
   SignUpRequest,
-  SignUpSuccessResponse,
 } from "@/src/types/auth";
 import type { SignUpFormValues } from "@/src/lib/validations/sign-up-schema";
 
-// رابط وقيم Supabase المأخوذة من بيئة العمل .env.local
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://pwxmbbdntmvsiiyzhlmh.supabase.co";
-const SUPABASE_ANON_KEY =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "sb_publishable_chMoTDsN_gy2m1MK0KbCmA_GBICEBn9";
-
 export class ApiError extends Error {
-  constructor(message: string) {
+  constructor(message: string, public status?: number) {
     super(message);
     this.name = "ApiError";
   }
+}
+
+function getSupabaseConfig() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    throw new ApiError(
+      "Supabase configuration is missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+    );
+  }
+
+  return { url, anonKey };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+async function readErrorMessage(
+  response: Response,
+  fallback: string
+): Promise<string> {
+  try {
+    const body: unknown = await response.json();
+    if (!isRecord(body)) return fallback;
+
+    for (const key of ["message", "msg", "error_description"]) {
+      const message = body[key];
+      if (typeof message === "string" && message.length > 0) return message;
+    }
+  } catch {
+    // Error responses may have an empty or non-JSON body.
+  }
+
+  return fallback;
 }
 
 /** Maps the form's fields to the exact backend contract (data.name / data.job_title). */
@@ -32,90 +60,110 @@ function toSignUpRequest(values: SignUpFormValues): SignUpRequest {
   };
 }
 
-export async function signUp(values: SignUpFormValues): Promise<SignUpSuccessResponse> {
+export async function signUp(values: SignUpFormValues): Promise<void> {
+  const { url, anonKey } = getSupabaseConfig();
   const body = toSignUpRequest(values);
 
-  // إرسال الطلب مباشرة إلى Supabase مع إرفاق الـ apikey المطلوبة
-  const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+  const response = await fetch(`${url}/auth/v1/signup`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "apikey": SUPABASE_ANON_KEY,
+      apikey: anonKey,
     },
     body: JSON.stringify(body),
   });
 
   if (!response.ok) {
-    const errorBody = (await response
-      .json()
-      .catch(() => null)) as (ApiErrorResponse & { msg?: string }) | null;
     throw new ApiError(
-      errorBody?.message ??
-        errorBody?.msg ??
-        errorBody?.error_description ??
+      await readErrorMessage(
+        response,
         `Registration failed (${response.status}). Please check your details or try a different email.`
+      ),
+      response.status
     );
   }
-
-  const resText = await response.text();
-  let data: SignUpSuccessResponse;
-  try {
-    data = JSON.parse(resText);
-  } catch {
-    data = { id: "", email: "", message: "Account created successfully." } as unknown as SignUpSuccessResponse;
-  }
-  return data;
 }
 
 export async function loginApi(
   credentials: LoginRequest,
   rememberMe: boolean = false
 ): Promise<LoginSuccessResponse> {
-  // إرسال طلب تسجيل الدخول مباشرة إلى Supabase
+  const { url, anonKey } = getSupabaseConfig();
   const response = await fetch(
-    `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+    `${url}/auth/v1/token?grant_type=password`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "apikey": SUPABASE_ANON_KEY,
+        apikey: anonKey,
       },
       body: JSON.stringify(credentials),
     }
   );
 
   if (!response.ok) {
-    const errorBody = (await response
-      .json()
-      .catch(() => null)) as ApiErrorResponse | null;
     throw new ApiError(
-      errorBody?.message ?? errorBody?.error_description ?? "Invalid email or password."
+      await readErrorMessage(response, "Invalid email or password."),
+      response.status
     );
   }
 
-  const resText = await response.text();
-  let data: LoginSuccessResponse;
+  let data: unknown;
   try {
-    data = JSON.parse(resText);
+    data = await response.json();
   } catch {
-    data = { access_token: "authenticated-session-token", token_type: "bearer" } as LoginSuccessResponse;
+    throw new ApiError("The login response was not valid JSON.", response.status);
   }
-  saveSession(data, rememberMe);
-  return data;
+
+  if (
+    !isRecord(data) ||
+    typeof data.access_token !== "string" ||
+    data.access_token.length === 0
+  ) {
+    throw new ApiError(
+      "The login response did not contain a valid access token.",
+      response.status
+    );
+  }
+
+  const session: LoginSuccessResponse = { access_token: data.access_token };
+  if (typeof data.token_type === "string") {
+    session.token_type = data.token_type;
+  }
+  if (typeof data.expires_in === "number") {
+    session.expires_in = data.expires_in;
+  }
+  if (
+    isRecord(data.user) &&
+    typeof data.user.id === "string" &&
+    typeof data.user.email === "string"
+  ) {
+    session.user = { id: data.user.id, email: data.user.email };
+  }
+
+  saveSession(session, rememberMe);
+  return session;
 }
 
 /** Saves user session with 1-month persistence if Remember Me is checked. */
 export function saveSession(data: LoginSuccessResponse, rememberMe: boolean) {
   if (typeof window === "undefined") return;
-  const token = data.access_token || "authenticated-session-token";
-  const days = rememberMe ? 30 : 1;
-  const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+  const token = data.access_token;
+  if (!token) {
+    throw new ApiError("Cannot save a session without an access token.");
+  }
 
-  document.cookie = `taskly_session=${token}; expires=${expires}; path=/; SameSite=Lax`;
+  const expires = rememberMe
+    ? `; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}`
+    : "";
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `taskly_session=${encodeURIComponent(token)}${expires}; path=/; SameSite=Lax${secure}`;
   if (rememberMe) {
     localStorage.setItem("taskly_session", token);
+    sessionStorage.removeItem("taskly_session");
   } else {
     sessionStorage.setItem("taskly_session", token);
+    localStorage.removeItem("taskly_session");
   }
 }
 
@@ -123,9 +171,11 @@ export function saveSession(data: LoginSuccessResponse, rememberMe: boolean) {
 export function clearSession() {
   if (typeof window === "undefined") return;
 
-  document.cookie = "taskly_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
-  document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
-  document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax";
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  const expired = `expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax${secure}`;
+  document.cookie = `taskly_session=; ${expired}`;
+  document.cookie = `access_token=; ${expired}`;
+  document.cookie = `refresh_token=; ${expired}`;
 
   localStorage.removeItem("taskly_session");
   localStorage.removeItem("access_token");
@@ -149,14 +199,20 @@ export async function logoutApi(): Promise<void> {
 
   if (token) {
     try {
-      await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      const { url, anonKey } = getSupabaseConfig();
+      const response = await fetch(`${url}/auth/v1/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": SUPABASE_ANON_KEY,
+          "apikey": anonKey,
           "Authorization": `Bearer ${token}`,
         },
       });
+      if (!response.ok) {
+        console.warn(
+          `Server logout notification failed (${response.status}); clearing the local session.`
+        );
+      }
     } catch (err) {
       console.warn("Server logout notification skipped:", err);
     }
@@ -166,14 +222,19 @@ export async function logoutApi(): Promise<void> {
   clearSession();
 }
 
-function isUserExistenceError(
-  status: number,
-  body: (ApiErrorResponse & { msg?: string; error_code?: string }) | null
-) {
-  const code = (body?.code ?? body?.error_code ?? '').toLowerCase();
-  const message = (body?.message ?? body?.msg ?? body?.error_description ?? '').toLowerCase();
+function isUserExistenceError(body: unknown) {
+  if (!isRecord(body)) return false;
+
+  const code = [body.code, body.error_code]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+  const message = [body.message, body.msg, body.error_description]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+
   return (
-    status === 404 ||
     code.includes('user_not_found') ||
     message.includes('user not found') ||
     message.includes('email not found')
@@ -182,12 +243,13 @@ function isUserExistenceError(
 
 /** Sends POST /auth/v1/recover. Never reveals whether the email exists. */
 export async function recoverPassword(email: string): Promise<void> {
+  const { url: supabaseUrl, anonKey } = getSupabaseConfig();
   const redirectTo =
     typeof window !== 'undefined'
       ? `${window.location.origin}/reset-password`
       : undefined;
 
-  const url = new URL(`${SUPABASE_URL}/auth/v1/recover`);
+  const url = new URL(`${supabaseUrl}/auth/v1/recover`);
   if (redirectTo) {
     url.searchParams.set('redirect_to', redirectTo);
   }
@@ -198,7 +260,7 @@ export async function recoverPassword(email: string): Promise<void> {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        apikey: SUPABASE_ANON_KEY,
+        apikey: anonKey,
       },
       body: JSON.stringify({ email }),
     });
@@ -212,21 +274,22 @@ export async function recoverPassword(email: string): Promise<void> {
     return;
   }
 
-  const errorBody = (await response
-    .json()
-    .catch(() => null)) as (ApiErrorResponse & {
-    msg?: string;
-    error_code?: string;
-  }) | null;
+  let errorBody: unknown = null;
+  try {
+    errorBody = await response.json();
+  } catch {
+    // Keep the generic response for empty or non-JSON error bodies.
+  }
 
-  if (isUserExistenceError(response.status, errorBody)) {
+  if (isUserExistenceError(errorBody)) {
     return;
   }
 
   throw new ApiError(
     response.status >= 500
       ? 'Something went wrong. Please try again later.'
-      : 'We could not send the reset link. Please try again.'
+      : 'We could not send the reset link. Please try again.',
+    response.status
   );
 }
 
@@ -235,13 +298,14 @@ export async function updatePasswordWithRecoveryToken(
   accessToken: string,
   password: string
 ): Promise<void> {
+  const { url, anonKey } = getSupabaseConfig();
   let response: Response;
   try {
-    response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    response = await fetch(`${url}/auth/v1/user`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        apikey: SUPABASE_ANON_KEY,
+        apikey: anonKey,
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ password }),
@@ -254,7 +318,8 @@ export async function updatePasswordWithRecoveryToken(
 
   if (!response.ok) {
     throw new ApiError(
-      'We could not update your password. The reset link may be invalid or expired. Please try again.'
+      'We could not update your password. The reset link may be invalid or expired. Please try again.',
+      response.status
     );
   }
 }

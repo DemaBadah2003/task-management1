@@ -34,6 +34,7 @@ export default function EpicsView({ projectId }: { projectId: string }) {
     moreError,
     setPage,
     retry,
+    updateEpic,
     loadMore,
   } = useProjectEpics(projectId, isMobile, searchTerm);
   const loadMoreTrigger = useRef<HTMLDivElement>(null);
@@ -162,6 +163,7 @@ export default function EpicsView({ projectId }: { projectId: string }) {
           projectId={projectId}
           epicId={selectedEpicId}
           onClose={closeDetails}
+          onEpicUpdated={updateEpic}
         />
       )}
       {isCreateOpen && (

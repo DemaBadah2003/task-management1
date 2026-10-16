@@ -12,6 +12,7 @@ import {
   type EditProjectFormValues,
 } from '@/src/lib/validations/project-schema';
 import { getProjectByIdApi, updateProjectApi } from '@/src/lib/api/project';
+import { ApiError } from '@/src/lib/api/auth';
 import { cn } from '@/src/lib/utils';
 import { useActiveProject } from '@/src/context/project-context';
 
@@ -27,7 +28,7 @@ interface EditProjectFormProps {
 
 export function EditProjectForm({ projectId, initialData }: EditProjectFormProps) {
   const router = useRouter();
-  const { setActiveProject } = useActiveProject();
+  const { activeProject, setActiveProject } = useActiveProject();
 
   const targetProjectId = projectId || initialData?.id;
 
@@ -65,12 +66,16 @@ export function EditProjectForm({ projectId, initialData }: EditProjectFormProps
       setActiveProject(project);
     } catch (err: unknown) {
       console.error('Failed to fetch project for editing:', err);
+      if (err instanceof ApiError && err.status === 401) {
+        router.replace('/login');
+        return;
+      }
       const msg = err instanceof Error ? err.message : 'Failed to load project details';
       setFetchError(msg);
     } finally {
       setIsLoadingProject(false);
     }
-  }, [targetProjectId, reset, setActiveProject]);
+  }, [targetProjectId, reset, router, setActiveProject]);
 
   useEffect(() => {
     if (targetProjectId) {
@@ -98,13 +103,17 @@ export function EditProjectForm({ projectId, initialData }: EditProjectFormProps
         id: targetProjectId,
         name: values.name,
         description: values.description || '',
-        createdAt: new Date().toISOString(),
+        createdAt: activeProject?.createdAt ?? null,
       });
 
       toast.success('Project updated successfully');
       router.push('/project');
     } catch (err: unknown) {
       console.error('Update project error:', err);
+      if (err instanceof ApiError && err.status === 401) {
+        router.replace('/login');
+        return;
+      }
       const msg = err instanceof Error ? err.message : 'Try again later';
       const formattedError = msg.startsWith('Failed to update project')
         ? msg

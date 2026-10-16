@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import AddTaskIcon from '@/public/addTask.svg';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ interface EpicDetailsModalProps {
   projectId: string;
   epicId: string;
   onClose: () => void;
+  onEpicUpdated: (epicId: string, updates: Partial<Epic>) => void;
 }
 
 interface EpicDetailsResult {
@@ -27,17 +29,21 @@ interface EpicDetailsResult {
   error: string | null;
 }
 
+type EditableEpicField = 'title' | 'description' | 'assignee' | 'deadline';
+
+const EMPTY_SAVING_FIELDS: Record<EditableEpicField, boolean> = {
+  title: false,
+  description: false,
+  assignee: false,
+  deadline: false,
+};
+
 function initials(user?: EpicUser | null) {
-  return (
-    user?.name
-      ?.trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join('')
-      .toUpperCase() || '?'
-  );
+  const parts = user?.name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  if (parts.length > 1) {
+    return parts.slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+  }
+  return parts[0]?.slice(0, 2).toUpperCase() || '?';
 }
 
 function formatCreatedAt(value: string) {
@@ -50,6 +56,44 @@ function formatCreatedAt(value: string) {
     day: 'numeric',
     year: 'numeric',
   }).format(date);
+}
+
+function formatTaskDueDate(value: string | null) {
+  if (!value) return 'No due date';
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T12:00:00`)
+    : new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+}
+
+function EpicTasksLoading() {
+  return (
+    <div
+      role="status"
+      aria-label="Loading tasks"
+      aria-busy="true"
+      className="space-y-2"
+    >
+      {Array.from({ length: 3 }, (_, index) => (
+        <div
+          key={index}
+          className="animate-pulse rounded-md border border-[#E5EAF5] bg-white px-3 py-2.5"
+        >
+          <div className="h-3 w-3/4 rounded bg-[#E5EAF5]" />
+          <div className="mt-3 flex items-center justify-between">
+            <div className="h-4 w-24 rounded bg-[#E5EAF5]" />
+            <div className="h-3 w-16 rounded bg-[#E5EAF5]" />
+          </div>
+        </div>
+      ))}
+      <span className="sr-only">Loading tasks...</span>
+    </div>
+  );
 }
 
 function toEpicUser(member: ProjectMember | null | undefined): EpicUser | null {
@@ -170,6 +214,7 @@ export function EpicDetailsModal({
   projectId,
   epicId,
   onClose,
+  onEpicUpdated,
 }: EpicDetailsModalProps) {
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<EpicDetailsResult | null>(null);
@@ -179,11 +224,17 @@ export function EpicDetailsModal({
   const [epicTasks, setEpicTasks] = useState<Task[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState<string | null>(null);
+  const [tasksAttempt, setTasksAttempt] = useState(0);
   const [titleValue, setTitleValue] = useState('');
   const [descriptionValue, setDescriptionValue] = useState('');
   const [deadlineValue, setDeadlineValue] = useState('');
   const [assigneeOpen, setAssigneeOpen] = useState(false);
+  const [savingFields, setSavingFields] =
+    useState<Record<EditableEpicField, boolean>>(EMPTY_SAVING_FIELDS);
+  const savingFieldsRef = useRef(new Set<EditableEpicField>());
+  const [membersAttempt, setMembersAttempt] = useState(0);
   const { openCreateTask, lastCreatedTask } = useCreateTaskModal();
+  const router = useRouter();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
@@ -328,7 +379,7 @@ export function EpicDetailsModal({
       isActive = false;
       controller.abort();
     };
-  }, [projectId]);
+  }, [membersAttempt, projectId]);
 
   useEffect(() => {
     if (!currentEpicKey) return;
@@ -360,7 +411,11 @@ export function EpicDetailsModal({
       } catch (error) {
         if (!isActive || controller.signal.aborted) return;
         console.error(`Failed to load tasks for epic ${epicId}:`, error);
-        setTasksError('Failed to load epic tasks.');
+        setTasksError(
+          error instanceof ApiError && error.status === 401
+            ? 'Your session has expired. Please sign in again.'
+            : 'Failed to load epic tasks.',
+        );
       } finally {
         if (isActive) setTasksLoading(false);
       }
@@ -371,7 +426,7 @@ export function EpicDetailsModal({
       isActive = false;
       controller.abort();
     };
-  }, [currentEpicKey, epicId, projectId]);
+  }, [currentEpicKey, epicId, projectId, tasksAttempt]);
 
   useEffect(() => {
     if (
@@ -390,8 +445,21 @@ export function EpicDetailsModal({
 
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
 
+  const beginFieldUpdate = useCallback((field: EditableEpicField) => {
+    if (savingFieldsRef.current.has(field)) return false;
+    savingFieldsRef.current.add(field);
+    setSavingFields((previous) => ({ ...previous, [field]: true }));
+    return true;
+  }, []);
+
+  const endFieldUpdate = useCallback((field: EditableEpicField) => {
+    savingFieldsRef.current.delete(field);
+    setSavingFields((previous) => ({ ...previous, [field]: false }));
+  }, []);
+
   const handleTitleBlur = useCallback(async () => {
     if (!currentResult?.epic) return;
+    if (savingFieldsRef.current.has('title')) return;
 
     const previousValue = currentResult.epic.title ?? '';
     const nextValue = titleValue.trim();
@@ -414,32 +482,42 @@ export function EpicDetailsModal({
       return;
     }
 
+    if (!beginFieldUpdate('title')) return;
+
     try {
       await updateEpicField(projectId, epicId, token, { title: nextValue });
       setTitleValue(nextValue);
+      onEpicUpdated(epicId, { title: nextValue });
       setResult((prev) =>
         prev && prev.epic
           ? { ...prev, epic: { ...prev.epic, title: nextValue } }
           : prev,
       );
       toast.success('Epic title updated');
-    } catch (error) {
+    } catch {
       setTitleValue(previousValue);
       setResult((prev) =>
         prev && prev.epic
           ? { ...prev, epic: { ...prev.epic, title: previousValue } }
           : prev,
       );
-      const message =
-        error instanceof ApiError && error.message
-          ? error.message
-          : 'Failed to update epic title.';
-      toast.error(message);
+      toast.error('Failed to update epic. Please try again.');
+    } finally {
+      endFieldUpdate('title');
     }
-  }, [currentResult, epicId, projectId, titleValue]);
+  }, [
+    beginFieldUpdate,
+    currentResult,
+    endFieldUpdate,
+    epicId,
+    onEpicUpdated,
+    projectId,
+    titleValue,
+  ]);
 
   const handleDescriptionBlur = useCallback(async () => {
     if (!currentResult?.epic) return;
+    if (savingFieldsRef.current.has('description')) return;
 
     const previousValue = currentResult.epic.description?.trim()
       ? currentResult.epic.description
@@ -460,34 +538,44 @@ export function EpicDetailsModal({
       return;
     }
 
+    if (!beginFieldUpdate('description')) return;
+
     try {
       await updateEpicField(projectId, epicId, token, {
         description: normalizedValue,
       });
       setDescriptionValue(normalizedValue ?? '');
+      onEpicUpdated(epicId, { description: normalizedValue });
       setResult((prev) =>
         prev && prev.epic
           ? { ...prev, epic: { ...prev.epic, description: normalizedValue } }
           : prev,
       );
       toast.success('Epic description updated');
-    } catch (error) {
+    } catch {
       setDescriptionValue(previousValue ?? '');
       setResult((prev) =>
         prev && prev.epic
           ? { ...prev, epic: { ...prev.epic, description: previousValue } }
           : prev,
       );
-      const message =
-        error instanceof ApiError && error.message
-          ? error.message
-          : 'Failed to update epic description.';
-      toast.error(message);
+      toast.error('Failed to update epic. Please try again.');
+    } finally {
+      endFieldUpdate('description');
     }
-  }, [currentResult, descriptionValue, epicId, projectId]);
+  }, [
+    beginFieldUpdate,
+    currentResult,
+    descriptionValue,
+    endFieldUpdate,
+    epicId,
+    onEpicUpdated,
+    projectId,
+  ]);
 
   const handleDeadlineChange = useCallback(async (nextValue: string) => {
     if (!currentResult?.epic) return;
+    if (savingFieldsRef.current.has('deadline')) return;
 
     const previousValue = currentResult.epic.deadline?.slice(0, 10) ?? null;
     const normalizedValue = nextValue || null;
@@ -497,11 +585,14 @@ export function EpicDetailsModal({
       return;
     }
 
+    if (!beginFieldUpdate('deadline')) return;
+
     setDeadlineValue(normalizedValue ?? '');
     const token = getSessionToken();
     if (!token) {
       setDeadlineValue(previousValue ?? '');
       toast.error('Your session is unavailable. Please sign in again.');
+      endFieldUpdate('deadline');
       return;
     }
 
@@ -509,6 +600,7 @@ export function EpicDetailsModal({
       await updateEpicField(projectId, epicId, token, {
         deadline: normalizedValue,
       });
+      onEpicUpdated(epicId, { deadline: normalizedValue });
       setResult((prev) =>
         prev && prev.epic
           ? { ...prev, epic: { ...prev.epic, deadline: normalizedValue } }
@@ -516,24 +608,33 @@ export function EpicDetailsModal({
       );
       setDeadlineValue(normalizedValue ?? '');
       toast.success('Epic deadline updated');
-    } catch (error) {
+    } catch {
       setDeadlineValue(previousValue ?? '');
       setResult((prev) =>
         prev && prev.epic
           ? { ...prev, epic: { ...prev.epic, deadline: previousValue } }
           : prev,
       );
-      const message =
-        error instanceof ApiError && error.message
-          ? error.message
-          : 'Failed to update epic deadline.';
-      toast.error(message);
+      toast.error('Failed to update epic. Please try again.');
+    } finally {
+      endFieldUpdate('deadline');
     }
-  }, [currentResult, epicId, projectId]);
+  }, [
+    beginFieldUpdate,
+    currentResult,
+    endFieldUpdate,
+    epicId,
+    onEpicUpdated,
+    projectId,
+  ]);
 
   const handleAssigneeSelect = useCallback(
     async (memberId: string | null) => {
       if (!currentResult?.epic) return;
+      if (savingFieldsRef.current.has('assignee')) return;
+      if (memberId && !projectMembers.some((member) => member.id === memberId)) {
+        return;
+      }
 
       const previousAssignee = currentResult.epic.assignee ?? null;
       const previousAssigneeId = getAssigneeId(previousAssignee);
@@ -543,9 +644,12 @@ export function EpicDetailsModal({
         return;
       }
 
+      if (!beginFieldUpdate('assignee')) return;
+
       const token = getSessionToken();
       if (!token) {
         toast.error('Your session is unavailable. Please sign in again.');
+        endFieldUpdate('assignee');
         return;
       }
 
@@ -569,6 +673,7 @@ export function EpicDetailsModal({
         await updateEpicField(projectId, epicId, token, {
           assignee_id: memberId,
         });
+        onEpicUpdated(epicId, { assignee: toEpicUser(nextMember) });
         setResult((prev) =>
           prev && prev.epic
             ? {
@@ -581,22 +686,27 @@ export function EpicDetailsModal({
             : prev,
         );
         toast.success('Epic assignee updated');
-      } catch (error) {
+      } catch {
         setResult((prev) =>
           prev && prev.epic
             ? { ...prev, epic: { ...prev.epic, assignee: previousAssignee } }
             : prev,
         );
-        const message =
-          error instanceof ApiError && error.message
-            ? error.message
-            : 'Failed to update epic assignee.';
-        toast.error(message);
+        toast.error('Failed to update epic. Please try again.');
       } finally {
         setAssigneeOpen(false);
+        endFieldUpdate('assignee');
       }
     },
-    [currentResult, epicId, projectId, projectMembers],
+    [
+      beginFieldUpdate,
+      currentResult,
+      endFieldUpdate,
+      epicId,
+      onEpicUpdated,
+      projectId,
+      projectMembers,
+    ],
   );
 
   useEffect(() => {
@@ -723,17 +833,31 @@ export function EpicDetailsModal({
                     onChange={(event) => setTitleValue(event.target.value)}
                     onBlur={handleTitleBlur}
                     required
+                    disabled={savingFields.title}
+                    aria-busy={savingFields.title}
                     aria-label="Epic title"
                     className="min-h-9 w-full rounded-md border border-[#D7E2FF] bg-white px-2.5 py-1.5 text-sm leading-5 font-semibold text-[#041B3C] outline-none ring-0 focus:border-[#003D9B]"
                   />
+                  {savingFields.title ? (
+                    <span role="status" className="text-xs text-[#737685]">
+                      Saving title...
+                    </span>
+                  ) : null}
                   <textarea
                     value={descriptionValue}
                     onChange={(event) => setDescriptionValue(event.target.value)}
                     onBlur={handleDescriptionBlur}
                     placeholder="No description provided"
+                    disabled={savingFields.description}
+                    aria-busy={savingFields.description}
                     aria-label="Epic description"
                     className="min-h-[106px] w-full resize-none whitespace-pre-wrap break-words rounded-md border border-[#D7E2FF] bg-white px-2.5 py-2 text-xs leading-5 text-[#434654] outline-none focus:border-[#003D9B]"
                   />
+                  {savingFields.description ? (
+                    <span role="status" className="text-xs text-[#737685]">
+                      Saving description...
+                    </span>
+                  ) : null}
                 </section>
 
                 <section
@@ -748,6 +872,8 @@ export function EpicDetailsModal({
                       <button
                         type="button"
                         onClick={() => setAssigneeOpen((value) => !value)}
+                        disabled={savingFields.assignee}
+                        aria-busy={savingFields.assignee}
                         className="flex h-9 w-full min-w-0 items-center justify-between gap-2 rounded-md border border-[#D7E2FF] bg-white px-2 text-left"
                       >
                         <span className="flex min-w-0 items-center gap-2">
@@ -794,6 +920,7 @@ export function EpicDetailsModal({
                           <button
                             type="button"
                             onClick={() => void handleAssigneeSelect(null)}
+                            disabled={savingFields.assignee}
                             className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs font-medium text-[#041B3C] hover:bg-[#F1F3FF]"
                           >
                             <span className="flex size-5 items-center justify-center rounded-full bg-[#D7E2FF] text-[8px] font-bold text-[#003D9B]">
@@ -808,7 +935,16 @@ export function EpicDetailsModal({
                             </div>
                           ) : membersError ? (
                             <div className="px-2 py-3 text-xs text-[#B42318]">
-                              {membersError}
+                              <p>{membersError}</p>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setMembersAttempt((value) => value + 1)
+                                }
+                                className="mt-1 font-semibold underline"
+                              >
+                                Retry
+                              </button>
                             </div>
                           ) : (
                             projectMembers.map((member) => (
@@ -816,6 +952,7 @@ export function EpicDetailsModal({
                                 key={member.id}
                                 type="button"
                                 onClick={() => void handleAssigneeSelect(member.id)}
+                                disabled={savingFields.assignee}
                                 className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs font-medium text-[#041B3C] hover:bg-[#F1F3FF]"
                               >
                                 {member.avatarUrl ? (
@@ -847,19 +984,42 @@ export function EpicDetailsModal({
                   </div>
 
                   <div className="min-w-0">
-                    <label className="mb-1.5 block text-[9px] leading-3 font-bold tracking-[0.6px] text-[#737685] uppercase">
-                      Deadline
-                    </label>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label
+                        htmlFor="epic-deadline"
+                        className="block text-[9px] leading-3 font-bold tracking-[0.6px] text-[#737685] uppercase"
+                      >
+                        Deadline
+                      </label>
+                      {deadlineValue ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleDeadlineChange('')}
+                          disabled={savingFields.deadline}
+                          className="text-[10px] font-medium text-[#003D9B] underline disabled:opacity-50"
+                        >
+                          Clear
+                        </button>
+                      ) : null}
+                    </div>
                     <input
+                      id="epic-deadline"
                       type="date"
                       value={deadlineValue}
                       onChange={(event) => {
                         const nextValue = event.target.value;
                         void handleDeadlineChange(nextValue);
                       }}
+                      disabled={savingFields.deadline}
+                      aria-busy={savingFields.deadline}
                       aria-label="Epic deadline"
                       className="h-9 w-full rounded-md border border-[#D7E2FF] bg-white px-2.5 py-1.5 text-xs text-[#041B3C] outline-none focus:border-[#003D9B]"
                     />
+                    {savingFields.deadline ? (
+                      <span role="status" className="mt-1 block text-xs text-[#737685]">
+                        Saving deadline...
+                      </span>
+                    ) : null}
                   </div>
 
                   <PersonDetails
@@ -892,19 +1052,34 @@ export function EpicDetailsModal({
                     </button>
                   </div>
                   {tasksLoading ? (
-                    <div
-                      role="status"
-                      className="flex min-h-24 items-center justify-center text-xs text-[#737685]"
-                    >
-                      Loading tasks...
-                    </div>
+                    <EpicTasksLoading />
                   ) : tasksError ? (
-                    <p
+                    <div
                       role="alert"
-                      className="py-4 text-center text-xs text-[#B42318]"
+                      className="flex flex-col items-center gap-2 py-4 text-center"
                     >
-                      {tasksError}
-                    </p>
+                      <p className="text-xs text-[#B42318]">{tasksError}</p>
+                      {tasksError.startsWith('Your session') ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onClose();
+                            router.replace('/login');
+                          }}
+                          className="text-xs font-semibold text-[#003D9B] underline"
+                        >
+                          Sign in
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setTasksAttempt((value) => value + 1)}
+                          className="rounded-md bg-[#F1F3FF] px-3 py-1.5 text-xs font-semibold text-[#003D9B] hover:bg-[#D7E2FF]"
+                        >
+                          Retry
+                        </button>
+                      )}
+                    </div>
                   ) : epicTasks.length > 0 ? (
                     <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
                       {epicTasks.map((task) => {
@@ -917,7 +1092,7 @@ export function EpicDetailsModal({
                             key={task.id}
                             className="rounded-md border border-[#E5EAF5] bg-white px-3 py-2.5"
                           >
-                            <h4 className="text-[10px] leading-4 font-semibold text-[#041B3C]">
+                            <h4 className="break-words text-[10px] leading-4 font-semibold text-[#041B3C]">
                               {task.title}
                             </h4>
                             <div className="mt-2 flex items-center justify-between gap-3">
@@ -939,23 +1114,25 @@ export function EpicDetailsModal({
                                           name: member.name,
                                           sub: member.id,
                                         })
-                                      : '?'}
+                                      : task.assignee_id
+                                        ? '?'
+                                        : '—'}
                                   </span>
                                 )}
                                 <span className="truncate text-[9px] leading-3 text-[#737685]">
-                                  {member?.name || 'Unassigned'}
+                                  {task.assignee_id
+                                    ? member?.name || 'Assignee unavailable'
+                                    : 'Unassigned'}
                                 </span>
                               </div>
-                              {task.due_date ? (
-                                <div className="shrink-0 text-right">
-                                  <p className="text-[7px] leading-3 font-semibold text-[#737685] uppercase">
-                                    Due date
-                                  </p>
-                                  <p className="text-[8px] leading-3 font-medium text-[#434654]">
-                                    {formatCreatedAt(task.due_date)}
-                                  </p>
-                                </div>
-                              ) : null}
+                              <div className="shrink-0 text-right">
+                                <p className="text-[7px] leading-3 font-semibold text-[#737685] uppercase">
+                                  Due date
+                                </p>
+                                <p className="text-[8px] leading-3 font-medium text-[#434654]">
+                                  {formatTaskDueDate(task.due_date)}
+                                </p>
+                              </div>
                             </div>
                           </article>
                         );

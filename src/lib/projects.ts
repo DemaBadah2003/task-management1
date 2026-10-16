@@ -38,7 +38,7 @@ function mapProject(item: any): Project {
     id: String(item.id),
     name: item.name || 'Untitled Project',
     description: item.description || '',
-    createdAt: item.created_at || item.createdAt || new Date().toISOString(),
+    createdAt: item.created_at || item.createdAt || null,
   };
 }
 

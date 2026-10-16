@@ -3,7 +3,9 @@ import type {
   ProjectEpic,
   ProjectMember,
   Task,
+  TaskStatus,
 } from "@/src/types/task";
+import { ApiError } from "@/src/lib/api/members";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -68,26 +70,55 @@ export async function createTask(
   return Array.isArray(data) ? data[0] : data;
 }
 
+export async function fetchProjectTasksByStatus(
+  projectId: string,
+  status: TaskStatus,
+  accessToken: string,
+  signal?: AbortSignal,
+): Promise<Task[]> {
+  const url = new URL(`${SUPABASE_URL}/rest/v1/project_tasks`);
+  url.searchParams.set("project_id", `eq.${projectId}`);
+  url.searchParams.set("status", `eq.${status}`);
+
+  const res = await fetch(url, {
+    headers: buildHeaders(accessToken),
+    signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(
+      await readError(res, "Failed to load project tasks"),
+      res.status,
+    );
+  }
+
+  const tasks: unknown = await res.json();
+  if (!Array.isArray(tasks)) {
+    throw new Error("The project tasks response was invalid");
+  }
+
+  return tasks as Task[];
+}
+
 export async function fetchEpicTasks(
   projectId: string,
   epicId: string,
   accessToken: string,
   signal?: AbortSignal,
 ): Promise<Task[]> {
-  const url = new URL(`${SUPABASE_URL}/rest/v1/tasks`);
-  url.searchParams.set(
-    "select",
-    "id,project_id,epic_id,title,description,assignee_id,due_date,status",
-  );
+  const url = new URL(`${SUPABASE_URL}/rest/v1/project_tasks`);
   url.searchParams.set("project_id", `eq.${projectId}`);
   url.searchParams.set("epic_id", `eq.${epicId}`);
-  url.searchParams.set("order", "due_date.asc.nullslast");
 
   const res = await fetch(url, {
     headers: buildHeaders(accessToken),
     signal,
   });
-  if (!res.ok) throw new Error(await readError(res, "Failed to load epic tasks"));
+  if (!res.ok) {
+    throw new ApiError(
+      await readError(res, "Failed to load epic tasks"),
+      res.status,
+    );
+  }
 
   const tasks: unknown = await res.json();
   if (!Array.isArray(tasks)) {

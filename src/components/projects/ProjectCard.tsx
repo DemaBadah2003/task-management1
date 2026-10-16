@@ -11,8 +11,8 @@ interface ProjectCardProps {
   project: Project;
 }
 
-function formatDate(dateString: string): string {
-  if (!dateString) return '';
+function formatDate(dateString: string | null): string {
+  if (!dateString) return '—';
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return dateString;
   const day = String(date.getDate()).padStart(2, '0');
