@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAccessToken } from '@/src/hooks/useAccessToken';
-import { acceptProjectInvitation, ApiError } from '@/src/lib/members-api';
+import { ApiError } from '@/src/lib/api/members';
+import { acceptProjectInvitation } from '@/src/lib/members-api';
 
 export default function AcceptInvitation({
   token: invitationToken,
