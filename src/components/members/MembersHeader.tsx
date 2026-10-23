@@ -26,8 +26,12 @@ const shadow = 'shadow-[0_10px_15px_-3px_#003D9B33,0_4px_6px_-4px_#003D9B33]';
 
 export function MembersHeader({
   projectName = 'Project Name',
+  canInvite,
+  onInviteClick,
 }: {
   projectName?: string;
+  canInvite: boolean;
+  onInviteClick: () => void;
 }) {
   return (
     <>
@@ -60,23 +64,29 @@ export function MembersHeader({
         </div>
 
         {/* زر الديسكتوب (UI فقط) */}
-        <button
-          type="button"
-          className={`hidden shrink-0 items-center gap-2 rounded-[2px] bg-[#003D9B] px-5 py-2.5 text-sm leading-5 font-bold text-white md:inline-flex ${shadow}`}
-        >
-          <UserPlusIcon />
-          Invite Member
-        </button>
+        {canInvite ? (
+          <button
+            type="button"
+            onClick={onInviteClick}
+            className={`hidden shrink-0 items-center gap-2 rounded-[2px] bg-[#003D9B] px-5 py-2.5 text-sm leading-5 font-bold text-white md:inline-flex ${shadow}`}
+          >
+            <UserPlusIcon />
+            Invite Member
+          </button>
+        ) : null}
       </header>
 
       {/* زر الموبايل: FAB (UI فقط) */}
-      <button
-        type="button"
-        aria-label="Invite Member"
-        className={`fixed right-4 bottom-20 z-20 flex h-12 w-12 items-center justify-center rounded-xl bg-[#003D9B] text-white md:hidden ${shadow}`}
-      >
-        <UserPlusIcon />
-      </button>
+      {canInvite ? (
+        <button
+          type="button"
+          aria-label="Invite Member"
+          onClick={onInviteClick}
+          className={`fixed right-4 bottom-20 z-20 flex h-12 w-12 items-center justify-center rounded-xl bg-[#003D9B] text-white md:hidden ${shadow}`}
+        >
+          <UserPlusIcon />
+        </button>
+      ) : null}
     </>
   );
 }

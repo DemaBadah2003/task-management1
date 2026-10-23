@@ -22,14 +22,14 @@ export const TASK_STATUSES: TaskStatusConfig[] = [
   {
     key: "IN_REVIEW",
     label: "IN REVIEW",
-    dotClass: "bg-indigo-700",
-    badgeClass: "bg-indigo-50 text-indigo-700",
+    dotClass: "bg-purple-700",
+    badgeClass: "bg-purple-50 text-purple-700",
   },
   {
     key: "READY_FOR_QA",
     label: "READY FOR QA",
-    dotClass: "bg-blue-500",
-    badgeClass: "bg-blue-50 text-blue-700",
+    dotClass: "bg-orange-600",
+    badgeClass: "bg-orange-50 text-orange-700",
   },
   {
     key: "REOPENED",
@@ -40,8 +40,8 @@ export const TASK_STATUSES: TaskStatusConfig[] = [
   {
     key: "READY_FOR_PRODUCTION",
     label: "READY FOR PRODUCTION",
-    dotClass: "bg-emerald-800",
-    badgeClass: "bg-emerald-50 text-emerald-800",
+    dotClass: "bg-blue-600",
+    badgeClass: "bg-blue-50 text-blue-700",
   },
   {
     key: "DONE",

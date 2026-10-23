@@ -66,7 +66,7 @@ export function SignUpForm() {
   return (
     <div className="mx-auto flex w-full max-w-[576px] flex-col justify-between rounded-[8px] border border-[#E8EDFF] bg-white p-6 shadow-[0px_24px_48px_rgba(4,27,60,0.06)] sm:h-[838.5px] sm:w-[576px] sm:p-[48px]">
       <div className="mb-6 flex flex-col items-start text-left sm:mb-8 sm:items-center sm:text-center">
-        <h1 className="sm:text-headline-lg align-middle font-sans text-2xl leading-8 font-semibold tracking-tight text-slate-900 sm:leading-[36px]">
+        <h1 className="sm:text-headline-lg align-middle font-sans text-2xl leading-8 font-semibold tracking-tight text-slate-900 md:leading-[40px]">
           Create your workspace
         </h1>
         <p className="text-body-md mt-1 hidden leading-5 text-slate-600 sm:block">

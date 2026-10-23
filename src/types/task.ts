@@ -17,6 +17,11 @@ export interface Task {
   assignee_id: string | null;
   due_date: string | null; // ISO timestamp
   status: TaskStatus;
+  priority?: string | null;
+  assignee_name?: string | null;
+  assignee_avatar?: string | null;
+  reporter?: string | null;
+  created_at?: string | null;
 }
 
 // جسم طلب POST /rest/v1/tasks (الحقول الاختيارية تُحذف إن كانت فارغة)
@@ -40,10 +45,12 @@ export interface TaskStatusConfig {
 export interface ProjectEpic {
   id: string;
   title: string;
+  epic_id?: string;
 }
 
 export interface ProjectMember {
   user_id: string;
   full_name?: string | null;
   email?: string | null;
+  avatar_url?: string | null;
 }

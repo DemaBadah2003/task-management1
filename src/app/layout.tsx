@@ -1,15 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
 import { Toaster } from 'sonner';
 import { RecoveryLinkHandler } from '@/src/components/auth/RecoveryLinkHandler';
 import './globals.css';
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-inter',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'Taskly',
@@ -22,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`h-full antialiased ${inter.variable}`}>
+    <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
         <RecoveryLinkHandler />
         {children}
@@ -31,4 +27,3 @@ export default function RootLayout({
     </html>
   );
 }
-

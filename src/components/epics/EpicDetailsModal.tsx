@@ -10,6 +10,7 @@ import { getProjectEpicDetails, updateEpicField } from '@/src/lib/api/epics';
 import { useCreateTaskModal } from '@/src/context/CreateTaskModalContext';
 import { getSessionToken } from '@/src/lib/api/user';
 import { fetchEpicTasks } from '@/src/lib/tasks-api';
+import TaskDetailsModal from '@/src/components/tasks/TaskDetailsModal';
 import type { Epic, EpicUser } from '@/src/types/epic';
 import type { ProjectMember } from '@/src/types/member';
 import type { Task } from '@/src/types/task';
@@ -222,6 +223,10 @@ export function EpicDetailsModal({
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
   const [epicTasks, setEpicTasks] = useState<Task[]>([]);
+  const [selectedTask, setSelectedTask] = useState<{
+    taskId: string;
+    assignee?: { name: string | null; avatarUrl: string | null };
+  } | null>(null);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState<string | null>(null);
   const [tasksAttempt, setTasksAttempt] = useState(0);
@@ -444,6 +449,7 @@ export function EpicDetailsModal({
   }, [epicId, lastCreatedTask, projectId]);
 
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
+  const closeTaskDetails = useCallback(() => setSelectedTask(null), []);
 
   const beginFieldUpdate = useCallback((field: EditableEpicField) => {
     if (savingFieldsRef.current.has(field)) return false;
@@ -711,8 +717,11 @@ export function EpicDetailsModal({
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose();
-      if (event.key !== 'Tab' || !dialogRef.current) return;
+      if (event.key === 'Escape') {
+        if (!selectedTask) onClose();
+        return;
+      }
+      if (selectedTask || event.key !== 'Tab' || !dialogRef.current) return;
 
       const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
         'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
@@ -732,7 +741,7 @@ export function EpicDetailsModal({
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  }, [onClose, selectedTask]);
 
   const assigneeValue = currentEpic?.assignee ?? null;
 
@@ -1088,9 +1097,22 @@ export function EpicDetailsModal({
                         );
 
                         return (
-                          <article
+                          <button
+                            type="button"
                             key={task.id}
-                            className="rounded-md border border-[#E5EAF5] bg-white px-3 py-2.5"
+                            onClick={() =>
+                              setSelectedTask({
+                                taskId: task.id,
+                                assignee: member
+                                  ? {
+                                      name: member.name,
+                                      avatarUrl: member.avatarUrl,
+                                    }
+                                  : undefined,
+                              })
+                            }
+                            aria-label={`Open task details: ${task.title}`}
+                            className="w-full rounded-md border border-[#E5EAF5] bg-white px-3 py-2.5 text-left hover:border-[#D7E2FF] focus-visible:outline-2 focus-visible:outline-[#003D9B]"
                           >
                             <h4 className="break-words text-[10px] leading-4 font-semibold text-[#041B3C]">
                               {task.title}
@@ -1134,7 +1156,7 @@ export function EpicDetailsModal({
                                 </p>
                               </div>
                             </div>
-                          </article>
+                          </button>
                         );
                       })}
                     </div>
@@ -1164,6 +1186,31 @@ export function EpicDetailsModal({
           </div>
         </div>
       </div>
+      {selectedTask ? (
+        <TaskDetailsModal
+          key={`${projectId}:${selectedTask.taskId}`}
+          projectId={projectId}
+          taskId={selectedTask.taskId}
+          assignee={selectedTask.assignee}
+          projectMembers={projectMembers.map((member) => ({
+            id: member.id,
+            name: member.name,
+            email: member.email,
+            avatarUrl: member.avatarUrl,
+          }))}
+          projectEpics={[]}
+          epic={
+            currentResult?.epic
+              ? {
+                  id: currentResult.epic.id,
+                  epic_id: currentResult.epic.epic_id,
+                  title: currentResult.epic.title,
+                }
+              : undefined
+          }
+          onClose={closeTaskDetails}
+        />
+      ) : null}
     </div>
   );
 }

@@ -36,14 +36,14 @@
   --color-warning-bg: #fff8e1;
 
   /* ---- Typography: Inter ---- */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
-  --text-display-lg: 3rem; /* 48px */
+  --text-display-lg: 3.5rem; /* 56px */
   --text-display-lg--line-height: 1.15;
   --text-display-lg--font-weight: 700;
 
-  --text-headline-lg: 1.875rem; /* 30px */
-  --text-headline-lg--line-height: 2.25rem; /* 36px */
+  --text-headline-lg: 2rem; /* 32px */
+  --text-headline-lg--line-height: 2.5rem; /* 40px */
   --text-headline-lg--font-weight: 600;
   --text-headline-lg--letter-spacing: -0.75px;
 
@@ -83,6 +83,7 @@
   --text-label-neg-sm--letter-spacing: -0.55px;
 
   /* ---- Border radius & Custom Dimensions ---- */
+  --radius-md: 0.25rem; /* 4px — aligns compact controls with the design scale */
   --radius-card: 0.5rem; /* 8px */
   --radius-control: 0.5rem; /* 8px */
   --radius-pill: 9999px;
@@ -134,6 +135,37 @@ body {
   background-color: var(--color-background);
   color: var(--color-slate-900);
   font-family: var(--font-sans);
+}
+
+@media (max-height: 700px) and (min-width: 768px) {
+  .task-details-sidebar {
+    padding-top: 114px !important;
+    padding-bottom: 0 !important;
+    gap: 11px !important;
+  }
+
+  .task-details-sidebar .task-details-field-label,
+  [data-task-details-modal] header .task-details-field-label {
+    margin-bottom: 4px !important;
+  }
+}
+
+@media (max-height: 700px) and (max-width: 767px) {
+  .task-details-sidebar {
+    gap: 8px !important;
+  }
+
+  .task-details-sidebar .task-details-field-label {
+    margin-bottom: 4px !important;
+  }
+
+  .task-details-content {
+    gap: 4px !important;
+  }
+
+  .task-details-content > div:first-child {
+    padding-bottom: 4px;
+  }
 }
 
 .icon-primary {

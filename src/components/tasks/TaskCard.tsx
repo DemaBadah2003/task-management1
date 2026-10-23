@@ -37,15 +37,29 @@ function getInitials(member?: ProjectMember) {
 export default function TaskCard({
   task,
   assignee,
+  onClick,
 }: {
   task: Task;
   assignee?: ProjectMember;
+  onClick?: () => void;
 }) {
   const due = task.due_date ? formatDueDate(task.due_date) : null;
   const status = TASK_STATUSES.find((item) => item.key === task.status);
 
   return (
-    <article className="flex min-h-[88px] min-w-0 flex-col rounded-lg border border-slate-100 bg-white p-3 shadow-sm">
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick?.();
+        }
+      }}
+      aria-label={`Open task details: ${task.title}`}
+      className="flex min-h-[88px] min-w-0 cursor-pointer flex-col rounded-lg border border-slate-100 bg-white p-3 text-left shadow-sm transition hover:border-blue-200 hover:shadow-md focus-visible:outline-2 focus-visible:outline-blue-600"
+    >
       {status ? (
         <div className="mb-2 flex justify-end md:hidden">
           <span

@@ -3,6 +3,7 @@ import type {
   ProjectMember,
   ProjectMemberRow,
 } from "@/src/types/member";
+import { ApiError } from "@/src/lib/api/members";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -52,4 +53,101 @@ export async function fetchProjectMembersView(
 
   const rows: ProjectMemberRow[] = await res.json();
   return rows.map(mapRow);
+}
+
+export async function inviteProjectMember(
+  email: string,
+  projectId: string,
+  accessToken: string,
+  appUrl: string,
+): Promise<void> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error("Supabase configuration is missing.");
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/invite_member`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      p_email: email,
+      p_project_id: projectId,
+      p_app_url: appUrl,
+      p_base_url: SUPABASE_URL,
+    }),
+  });
+
+  const result: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const message =
+      typeof result === "object" && result !== null && "message" in result
+        ? String(result.message)
+        : "Failed to send the invitation.";
+    throw new ApiError(message, response.status);
+  }
+  if (
+    result === false ||
+    (typeof result === "object" &&
+      result !== null &&
+      "success" in result &&
+      result.success === false)
+  ) {
+    const message =
+      typeof result === "object" && result !== null && "message" in result
+        ? String(result.message)
+        : "Failed to send the invitation.";
+    throw new Error(message);
+  }
+}
+
+export async function acceptProjectInvitation(
+  invitationToken: string,
+  accessToken: string,
+): Promise<string | null> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    throw new Error("Supabase configuration is missing.");
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/accept_invitation`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ p_token: invitationToken }),
+  });
+
+  const result: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const message =
+      typeof result === "object" && result !== null && "message" in result
+        ? String(result.message)
+        : "Something went wrong while accepting the invitation. Please try again.";
+    throw new ApiError(message, response.status);
+  }
+
+  if (
+    result === false ||
+    (typeof result === "object" &&
+      result !== null &&
+      "success" in result &&
+      result.success === false)
+  ) {
+    const message =
+      typeof result === "object" && result !== null && "message" in result
+        ? String(result.message)
+        : "This invitation could not be accepted.";
+    throw new Error(message);
+  }
+
+  if (typeof result !== "object" || result === null) return null;
+  const resultRecord = result as Record<string, unknown>;
+  const projectId = resultRecord.project_id ?? resultRecord.projectId;
+  return typeof projectId === "string" && projectId.trim()
+    ? projectId
+    : null;
 }
