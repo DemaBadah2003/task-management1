@@ -5,7 +5,8 @@ import type { TaskStatus } from '@/src/types/task';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export type TaskStatusCounts = Partial<Record<TaskStatus, number>>;
+export type StatisticsStatus = TaskStatus | 'ACTIVE';
+export type TaskStatusCounts = Partial<Record<StatisticsStatus, number>>;
 
 export interface DailyTaskStats {
   day: string;
@@ -50,6 +51,7 @@ function normalizeStatusCounts(value: unknown): TaskStatusCounts {
   for (const { key } of TASK_STATUSES) {
     if (key in value) counts[key] = asCount(value[key]);
   }
+  if ('ACTIVE' in value) counts.ACTIVE = asCount(value.ACTIVE);
   return counts;
 }
 

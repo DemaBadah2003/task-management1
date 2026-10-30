@@ -65,9 +65,7 @@ export function Navbar({ onToggleMobileMenu }: NavbarProps) {
           <>
             {/* Full Name & Job Title (Visible on sm+ screens) */}
             <div className="hidden max-w-[140px] min-w-0 flex-col items-end text-right sm:flex md:max-w-[200px] lg:max-w-[280px]">
-              <span className="w-full truncate text-[14px] leading-tight font-bold text-slate-900">
-                {user?.name || 'Mahmoud Taha'}
-              </span>
+             
               <span
                 className="w-full truncate font-bold text-primary uppercase"
                 style={{
@@ -86,7 +84,7 @@ export function Navbar({ onToggleMobileMenu }: NavbarProps) {
             {/* Initials Avatar Badge */}
             <div
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px] bg-primary text-[14px] font-bold text-white shadow-xs select-none"
-              title={user?.name || 'Mahmoud Taha'}
+              title={user?.name }
             >
               {initials || 'MT'}
             </div>

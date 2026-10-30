@@ -6,11 +6,13 @@ import { TASK_STATUSES } from '@/src/constants/task-statuses';
 import { useAccessToken } from '@/src/hooks/useAccessToken';
 import { getProjectsApi } from '@/src/lib/api/project';
 import { ApiError } from '@/src/lib/api/auth';
+import CalendarX from '@/src/components/icons/CalendarX';
 import {
   fetchCalendarTaskStats,
   fetchTaskCountsPerProject,
   type CalendarTaskStats,
   type ProjectTaskCount,
+  type StatisticsStatus,
 } from '@/src/lib/statistics-api';
 import type { Project } from '@/src/types/project';
 import type { TaskStatus } from '@/src/types/task';
@@ -22,15 +24,55 @@ interface KeyedResult<T> {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const STATUS_COLORS: Record<TaskStatus, string> = {
-  TO_DO: '#64748b',
-  IN_PROGRESS: '#2563eb',
-  BLOCKED: '#dc2626',
+const STATUS_COLORS: Record<StatisticsStatus, string> = {
+  TO_DO: '#737685',
+  IN_PROGRESS: '#003D9B',
+  ACTIVE: '#003D9B',
+  BLOCKED: '#BA1A1A',
   IN_REVIEW: '#7c3aed',
   READY_FOR_QA: '#d97706',
   REOPENED: '#e11d48',
   READY_FOR_PRODUCTION: '#0891b2',
-  DONE: '#059669',
+  DONE: '#004E32',
+};
+// Doughnut chart colors, taken exactly from the Figma design
+const CHART_COLORS: Record<StatisticsStatus, string> = {
+  TO_DO: '#E8EDFF',
+  IN_PROGRESS: '#003D9B',
+  ACTIVE: '#003D9B',
+  BLOCKED: '#BA1A1A',
+  IN_REVIEW: '#0052CC',
+  READY_FOR_QA: '#4C7DD6',
+  REOPENED: '#BA1A1A',
+  READY_FOR_PRODUCTION: '#7FA2E8',
+  DONE: '#004E32',
+};
+// Segment order (clockwise from the top) to match the Figma layout:
+// light segment, red, green, then the large blue segment
+const CHART_ORDER: StatisticsStatus[] = [
+  'TO_DO',
+  'REOPENED',
+  'BLOCKED',
+  'IN_REVIEW',
+  'READY_FOR_QA',
+  'READY_FOR_PRODUCTION',
+  'DONE',
+  'ACTIVE',
+  'IN_PROGRESS',
+];
+// Ring size and thickness from Figma (180px, 32.4px border)
+const CHART_SIZE = 180;
+const CHART_THICKNESS = 32.4;
+const STATUS_PILL_STYLES: Record<StatisticsStatus, string> = {
+  TO_DO: 'bg-[#7376851A] text-[#737685]',
+  IN_PROGRESS: 'border-l-4 border-[#003D9B] bg-[#0052CC33] text-[#003D9B]',
+  ACTIVE: 'bg-[#0052CC1A] text-[#003D9B]',
+  BLOCKED: 'bg-[#FFDAD61A] text-[#BA1A1A]',
+  IN_REVIEW: 'bg-[#003D9B1A] text-[#003D9B]',
+  READY_FOR_QA: 'bg-[#003D9B1A] text-[#003D9B]',
+  REOPENED: 'bg-[#BA1A1A0D] text-[#BA1A1A]',
+  READY_FOR_PRODUCTION: 'bg-[#003D9B1A] text-[#003D9B]',
+  DONE: 'bg-[#0068441A] text-[#004E32]',
 };
 
 function dateInputValue(date: Date) {
@@ -42,8 +84,7 @@ function currentWeekRange() {
   const start = new Date(
     Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
   );
-  const daysSinceMonday = (start.getUTCDay() + 6) % 7;
-  start.setUTCDate(start.getUTCDate() - daysSinceMonday);
+  start.setUTCDate(start.getUTCDate() - start.getUTCDay());
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 6);
   return { startDate: dateInputValue(start), endDate: dateInputValue(end) };
@@ -79,7 +120,25 @@ function formatDay(value: string) {
   }).format(new Date(`${value}T12:00:00Z`));
 }
 
-function statusName(status: TaskStatus) {
+function formatRangeLabel(startDate: string, endDate: string) {
+  const start = new Date(`${startDate}T12:00:00Z`);
+  const end = new Date(`${endDate}T12:00:00Z`);
+  const startLabel = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(start);
+  const endLabel = new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(end);
+  return `${startLabel} - ${endLabel}`;
+}
+
+function statusName(status: StatisticsStatus) {
+  if (status === 'ACTIVE') return 'Active';
   const label =
     TASK_STATUSES.find((item) => item.key === status)?.label ?? status;
   return label
@@ -130,6 +189,13 @@ export default function MyStatisticsDashboard() {
   const { token, loading: tokenLoading } = useAccessToken();
   const router = useRouter();
   const [range, setRange] = useState(currentWeekRange);
+  const [draftRange, setDraftRange] = useState(range);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isSelectingEndDate, setIsSelectingEndDate] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState(() => {
+    const date = new Date(`${range.startDate}T00:00:00Z`);
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+  });
   const [projectId, setProjectId] = useState('');
   const [status, setStatus] = useState('');
   const [projectsResult, setProjectsResult] = useState<KeyedResult<Project[]>>({
@@ -156,6 +222,16 @@ export default function MyStatisticsDashboard() {
   const [retryProjectCounts, setRetryProjectCounts] = useState(0);
 
   const daysInRange = rangeLength(range.startDate, range.endDate);
+  const draftRangeLength = rangeLength(
+    draftRange.startDate,
+    draftRange.endDate
+  );
+  const draftRangeError =
+    draftRangeLength === null
+      ? 'Choose a valid start and end date.'
+      : draftRangeLength > 7
+        ? 'Select no more than 7 calendar days.'
+        : null;
   const rangeError =
     daysInRange === null
       ? 'Choose a valid start and end date.'
@@ -200,6 +276,18 @@ export default function MyStatisticsDashboard() {
     }
     return days;
   }, [daysInRange, range.startDate]);
+
+  const pickerCells = useMemo(() => {
+    const year = pickerMonth.getUTCFullYear();
+    const month = pickerMonth.getUTCMonth();
+    const leadingDays = new Date(Date.UTC(year, month, 1)).getUTCDay();
+    const monthLength = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    return Array.from({ length: leadingDays + monthLength }, (_, index) => {
+      const day = index - leadingDays + 1;
+      if (day < 1) return null;
+      return dateInputValue(new Date(Date.UTC(year, month, day)));
+    });
+  }, [pickerMonth]);
 
   useEffect(() => {
     if (tokenLoading) return;
@@ -322,10 +410,24 @@ export default function MyStatisticsDashboard() {
     tokenLoading,
   ]);
 
-  const chartEntries = TASK_STATUSES.flatMap(({ key }) => {
+  const chartEntries: {
+    key: StatisticsStatus;
+    count: number;
+    color: string;
+  }[] = TASK_STATUSES.flatMap(({ key }) => {
     const count = calendarStats?.totals[key] ?? 0;
-    return count > 0 ? [{ key, count, color: STATUS_COLORS[key] }] : [];
+    return count > 0 ? [{ key, count, color: CHART_COLORS[key] }] : [];
   });
+  if ((calendarStats?.totals.ACTIVE ?? 0) > 0) {
+    chartEntries.push({
+      key: 'ACTIVE',
+      count: calendarStats?.totals.ACTIVE ?? 0,
+      color: CHART_COLORS.ACTIVE,
+    });
+  }
+  chartEntries.sort(
+    (a, b) => CHART_ORDER.indexOf(a.key) - CHART_ORDER.indexOf(b.key)
+  );
   const chartTotal = chartEntries.reduce((sum, item) => sum + item.count, 0);
   let chartCursor = 0;
   const chartGradient =
@@ -342,108 +444,300 @@ export default function MyStatisticsDashboard() {
   const dailyByDay = new Map(
     calendarStats?.daily.map((item) => [item.day, item]) ?? []
   );
-  const updateRange = (field: 'startDate' | 'endDate', value: string) => {
-    setRange((current) => ({ ...current, [field]: value }));
-  };
   const retryCalendar = () => setRetryStats((value) => value + 1);
   const retryProjectsList = () => setRetryProjects((value) => value + 1);
   const retryCounts = () => setRetryProjectCounts((value) => value + 1);
+  const moveRangeByWeek = (offset: number) => {
+    const start = new Date(`${range.startDate}T00:00:00Z`);
+    start.setUTCDate(start.getUTCDate() + offset * 7);
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 6);
+    const nextRange = {
+      startDate: dateInputValue(start),
+      endDate: dateInputValue(end),
+    };
+    setRange(nextRange);
+    setDraftRange(nextRange);
+  };
+  const selectPickerDay = (day: string) => {
+    if (!isSelectingEndDate || day < draftRange.startDate) {
+      setDraftRange({ startDate: day, endDate: day });
+      setIsSelectingEndDate(true);
+      return;
+    }
+    setDraftRange((current) => ({ ...current, endDate: day }));
+    setIsSelectingEndDate(false);
+  };
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 pb-8">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+    <div className="mx-auto flex w-full max-w-240 flex-col gap-4 pb-8">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold tracking-[0.12em] text-blue-800 uppercase">
-            Personal analytics
-          </p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-950">
-            My Statistics
+          <h1 className="text-[30px] leading-9 font-bold tracking-[-0.75px] text-slate-900">
+            Weekly Planner
           </h1>
+          <p className="text-base leading-6 font-normal tracking-normal text-slate-500">
+            Manage your deadlines and track team velocity.
+          </p>
         </div>
-        <p className="text-sm text-slate-500">
-          Task activity for the selected period
-        </p>
       </header>
 
       <section
         aria-label="Statistics filters"
-        className="grid gap-3 border-y border-slate-200 py-4 sm:grid-cols-2 lg:grid-cols-[1.2fr_1.2fr_1fr_1fr_auto] lg:items-end"
+        className="bg-surface-low flex flex-wrap items-center justify-between gap-3 rounded-lg p-4"
       >
-        <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
-          Start date
-          <input
-            aria-label="Start date"
-            type="date"
-            value={range.startDate}
-            onChange={(event) => updateRange('startDate', event.target.value)}
-            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
-          />
-        </label>
-        <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
-          End date
-          <input
-            aria-label="End date"
-            type="date"
-            value={range.endDate}
-            onChange={(event) => updateRange('endDate', event.target.value)}
-            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
-          />
-        </label>
-        <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
-          Project
-          <select
-            aria-label="Project filter"
-            value={projectId}
-            onChange={(event) => setProjectId(event.target.value)}
-            disabled={projectsLoading || Boolean(projectsError)}
-            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100 disabled:opacity-60"
+        <div className="relative order-1 flex h-9 w-full min-w-0 flex-1 items-center justify-start gap-1 sm:min-w-70">
+          <button
+            type="button"
+            aria-label="Previous week"
+            onClick={() => moveRangeByWeek(-1)}
+            className="flex size-6 shrink-0 items-center justify-center text-slate-500 hover:text-blue-800"
           >
-            <option value="">All Projects</option>
-            {projects?.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5 text-xs font-semibold text-slate-700">
-          Status
-          <select
-            aria-label="Status filter"
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100"
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 16 16"
+              className="size-4"
+              fill="none"
+            >
+              <path
+                d="m10 3-5 5 5 5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            aria-expanded={isDatePickerOpen}
+            aria-label={`Selected date range ${formatRangeLabel(range.startDate, range.endDate)}`}
+            onClick={() => {
+              setDraftRange(range);
+              const start = new Date(`${range.startDate}T00:00:00Z`);
+              setPickerMonth(
+                new Date(
+                  Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1)
+                )
+              );
+              setIsSelectingEndDate(false);
+              setIsDatePickerOpen((open) => !open);
+            }}
+            className="flex min-w-0 items-center bg-transparent px-0 py-2 text-sm leading-5 font-bold tracking-normal text-slate-900 hover:bg-transparent"
           >
-            <option value="">All Statuses</option>
-            {TASK_STATUSES.map((item) => (
-              <option key={item.key} value={item.key}>
-                {statusName(item.key)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          onClick={() => {
-            const week = currentWeekRange();
-            setRange(week);
-            setProjectId('');
-            setStatus('');
-          }}
-          className="h-10 rounded-md border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-        >
-          This week
-        </button>
+            <span className="whitespace-nowrap">
+              {formatRangeLabel(range.startDate, range.endDate)}
+            </span>
+          </button>
+          <button
+            type="button"
+            aria-label="Next week"
+            onClick={() => moveRangeByWeek(1)}
+            className="flex size-6 shrink-0 items-center justify-center text-slate-500 hover:text-blue-800"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 16 16"
+              className="size-4"
+              fill="none"
+            >
+              <path
+                d="m6 3 5 5-5 5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          {isDatePickerOpen ? (
+            <div className="absolute top-full left-0 z-30 mt-2 w-[min(340px,calc(100vw-40px))] rounded-md border border-slate-200 bg-white p-4 shadow-xl">
+              <div className="mb-3 flex items-center justify-between">
+                <button
+                  type="button"
+                  aria-label="Previous month"
+                  onClick={() =>
+                    setPickerMonth(
+                      (month) =>
+                        new Date(
+                          Date.UTC(
+                            month.getUTCFullYear(),
+                            month.getUTCMonth() - 1,
+                            1
+                          )
+                        )
+                    )
+                  }
+                  className="flex size-8 items-center justify-center rounded hover:bg-slate-100"
+                >
+                  <span aria-hidden="true">‹</span>
+                </button>
+                <h2 className="text-sm font-bold text-slate-900">
+                  {new Intl.DateTimeFormat('en-US', {
+                    month: 'long',
+                    year: 'numeric',
+                    timeZone: 'UTC',
+                  }).format(pickerMonth)}
+                </h2>
+                <button
+                  type="button"
+                  aria-label="Next month"
+                  onClick={() =>
+                    setPickerMonth(
+                      (month) =>
+                        new Date(
+                          Date.UTC(
+                            month.getUTCFullYear(),
+                            month.getUTCMonth() + 1,
+                            1
+                          )
+                        )
+                    )
+                  }
+                  className="flex size-8 items-center justify-center rounded hover:bg-slate-100"
+                >
+                  <span aria-hidden="true">›</span>
+                </button>
+              </div>
+              <div className="grid grid-cols-7 text-center text-[10px] font-semibold text-slate-500">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(
+                  (day) => (
+                    <span key={day} className="py-1">
+                      {day}
+                    </span>
+                  )
+                )}
+              </div>
+              <div className="grid grid-cols-7 gap-y-1 text-center">
+                {pickerCells.map((day, index) => {
+                  const selected =
+                    day !== null &&
+                    day >= draftRange.startDate &&
+                    day <= draftRange.endDate;
+                  return day ? (
+                    <button
+                      key={day}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => selectPickerDay(day)}
+                      className={`mx-auto flex size-8 items-center justify-center rounded-full text-xs ${selected ? 'bg-blue-800 font-bold text-white' : 'text-slate-700 hover:bg-blue-50'}`}
+                    >
+                      {Number(day.slice(-2))}
+                    </button>
+                  ) : (
+                    <span key={`blank-${index}`} />
+                  );
+                })}
+              </div>
+              <p
+                className="mt-3 min-h-4 text-xs text-red-700"
+                role={draftRangeError ? 'alert' : undefined}
+              >
+                {draftRangeError ??
+                  (isSelectingEndDate
+                    ? 'Choose an end date.'
+                    : `${formatRangeLabel(draftRange.startDate, draftRange.endDate)}`)}
+              </p>
+              <div className="mt-3 flex justify-end gap-2 border-t border-slate-100 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsDatePickerOpen(false)}
+                  className="rounded px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={Boolean(draftRangeError)}
+                  onClick={() => {
+                    setRange(draftRange);
+                    setIsDatePickerOpen(false);
+                  }}
+                  className="rounded bg-blue-800 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Apply Range
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+        <div className="order-2 flex w-full flex-wrap gap-3 sm:ml-auto sm:w-auto sm:flex-nowrap">
+          <label className="flex h-9 w-full min-w-0 items-center rounded-[2px] bg-white py-2 pr-10 pl-4 text-xs text-slate-500 shadow-[0px_1px_2px_0px_#0000000D] sm:w-51">
+            <span className="sr-only">Project filter</span>
+            <select
+              aria-label="Project filter"
+              value={projectId}
+              onChange={(event) => setProjectId(event.target.value)}
+              disabled={projectsLoading || Boolean(projectsError)}
+              className="min-w-0 flex-1 appearance-none bg-transparent text-sm leading-5 font-medium text-slate-900 outline-none disabled:opacity-60"
+            >
+              <option value="">All Projects</option>
+              {projects?.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 10 5"
+              width="8.4"
+              height="4.2"
+              fill="none"
+              className="shrink-0"
+            >
+              <path
+                d="m1 1 4 3 4-3"
+                stroke="#6B7280"
+                strokeWidth="1.57"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </label>
+          <label className="flex h-9 w-full min-w-0 items-center rounded-[2px] bg-white py-2 pr-10 pl-4 text-sm leading-5 text-slate-900 shadow-[0px_1px_2px_0px_#0000000D] sm:w-40">
+            <span className="sr-only">Status filter</span>
+            <select
+              aria-label="Status filter"
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              className="min-w-0 flex-1 appearance-none bg-transparent text-sm leading-5 font-medium text-slate-900 outline-none"
+            >
+              <option value="">All Statuses</option>
+              {TASK_STATUSES.map((item) => (
+                <option key={item.key} value={item.key}>
+                  {statusName(item.key)}
+                </option>
+              ))}
+            </select>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 10 5"
+              width="8.4"
+              height="4.2"
+              fill="none"
+              className="shrink-0"
+            >
+              <path
+                d="m1 1 4 3 4-3"
+                stroke="#6B7280"
+                strokeWidth="1.57"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </label>
+        </div>
         {rangeError ? (
           <p
             role="alert"
-            className="text-sm font-medium text-red-700 sm:col-span-2 lg:col-span-5"
+            className="text-xs font-medium text-red-700 sm:col-span-2 lg:col-span-3"
           >
             {rangeError}
           </p>
         ) : null}
         {projectsError ? (
-          <div className="sm:col-span-2 lg:col-span-5">
+          <div className="sm:col-span-2 lg:col-span-3">
             <ErrorPanel message={projectsError} onRetry={retryProjectsList} />
           </div>
         ) : null}
@@ -452,226 +746,322 @@ export default function MyStatisticsDashboard() {
       {calendarError ? (
         <ErrorPanel message={calendarError} onRetry={retryCalendar} />
       ) : null}
-      <section aria-label="Task summary" className="grid gap-3 sm:grid-cols-3">
-        <article className="flex min-h-28 flex-col justify-between border-l-4 border-blue-700 bg-white px-5 py-4 shadow-sm">
-          <h2 className="text-xs font-bold tracking-wide text-slate-600 uppercase">
-            Total Tasks
-          </h2>
-          {calendarLoading ? (
-            <LoadingValue />
-          ) : (
-            <p className="text-3xl font-bold text-slate-950">
-              {calendarStats?.total_tasks ?? '—'}
-            </p>
-          )}
-        </article>
-        <article className="flex min-h-28 flex-col justify-between border-l-4 border-emerald-600 bg-white px-5 py-4 shadow-sm">
-          <h2 className="text-xs font-bold tracking-wide text-slate-600 uppercase">
-            Completed Tasks
-          </h2>
-          {calendarLoading ? (
-            <LoadingValue />
-          ) : (
-            <p className="text-3xl font-bold text-slate-950">
-              {calendarStats?.done_tasks ?? '—'}
-            </p>
-          )}
-        </article>
-        <article className="flex min-h-28 flex-col justify-between border-l-4 border-rose-600 bg-white px-5 py-4 shadow-sm">
-          <h2 className="text-xs font-bold tracking-wide text-slate-600 uppercase">
-            Overdue Tasks
-          </h2>
-          {calendarLoading ? (
-            <LoadingValue />
-          ) : (
-            <p className="text-3xl font-bold text-slate-950">
-              {calendarStats?.overdue_tasks ?? '—'}
-            </p>
-          )}
-        </article>
+      <section
+        aria-label="Task summary"
+        className="grid grid-cols-3 gap-3 lg:gap-6"
+      >
+        {[
+          {
+            title: 'Total Tasks',
+            value: calendarStats?.total_tasks,
+            color: 'text-blue-800',
+            valueClass: 'text-2xl text-slate-950',
+            tint: 'bg-blue-50',
+            icon: 'total',
+          },
+          {
+            title: 'Completed Tasks',
+            value: calendarStats?.done_tasks,
+            color: 'text-emerald-700',
+            valueClass: 'text-2xl text-slate-950',
+            tint: 'bg-[#0068441A]',
+            icon: 'done',
+          },
+          {
+            title: 'Overdue Tasks',
+            value: calendarStats?.overdue_tasks,
+            color: 'text-red-700',
+            valueClass: 'text-[30px] leading-9 text-error',
+            tint: 'bg-red-50',
+            icon: 'overdue',
+          },
+        ].map((item) => (
+          <article
+            key={item.title}
+            className="flex h-26 items-center justify-between gap-2 rounded-lg bg-white p-6 shadow-[0px_1px_2px_0px_#0000000D]"
+          >
+            <div className="min-w-0">
+              <h2 className="truncate text-xs leading-4 font-bold tracking-[0.6px] text-[#041B3C99] uppercase">
+                {item.title}
+              </h2>
+              {calendarLoading ? (
+                <LoadingValue />
+              ) : (
+                <p className={`mt-1 leading-none font-bold ${item.valueClass}`}>
+                  {item.value ?? '—'}
+                </p>
+              )}
+            </div>
+            <span
+              aria-hidden="true"
+              className={`flex size-12 shrink-0 items-center justify-center rounded-sm ${item.tint} ${item.color}`}
+            >
+              {item.icon === 'total' ? (
+                <svg viewBox="0 0 20 20" className="size-4.5" fill="none">
+                  <rect
+                    x="3"
+                    y="3"
+                    width="14"
+                    height="14"
+                    rx="2"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="M6 7h8M6 10h8M6 13h5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              ) : item.icon === 'done' ? (
+                <svg viewBox="0 0 20 20" className="size-4.5" fill="none">
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="7"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="m6.5 10 2.2 2.2 4.8-4.8"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 20 20" className="size-4.5" fill="none">
+                  <path
+                    d="M10 3 18 17H2L10 3Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M10 8v4M10 14.5h.01"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              )}
+            </span>
+          </article>
+        ))}
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.8fr)]">
-        <div className="min-w-0">
-          <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Weekly Planner
-              </h2>
-              <p className="text-xs text-slate-500">
-                {range.startDate} – {range.endDate}
-              </p>
-            </div>
-            {calendarLoading ? (
-              <span role="status" className="text-xs text-slate-500">
-                Loading calendar…
-              </span>
-            ) : null}
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
-            {calendarDays.map((day) => {
-              const data = dailyByDay.get(day);
-              const statuses = Object.entries(data?.statuses ?? {}) as [
-                TaskStatus,
-                number,
-              ][];
-              const dayTotal = statuses.reduce(
-                (sum, [, count]) => sum + count,
-                0
-              );
-              return (
-                <article
-                  key={day}
-                  className="min-h-32 border border-slate-200 bg-white p-3"
-                >
-                  <h3 className="border-b border-slate-100 pb-2 text-xs font-bold text-slate-800">
-                    {formatDay(day)}
+      <section aria-label="Weekly task calendar" className="min-w-0">
+        <div className="-mt-2 mb-1 flex min-h-4 items-center justify-end">
+          {calendarLoading ? (
+            <span role="status" className="text-[10px] text-slate-500">
+              Loading…
+            </span>
+          ) : null}
+        </div>
+        <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 xl:gap-2 xl:px-4">
+          {calendarDays.map((day) => {
+            const data = dailyByDay.get(day);
+            const statuses = Object.entries(data?.statuses ?? {}) as [
+              StatisticsStatus,
+              number,
+            ][];
+            const dayTotal = statuses.reduce(
+              (sum, [, count]) => sum + count,
+              0
+            );
+            const isToday = day === dateInputValue(new Date());
+            return (
+              <article
+                key={day}
+                className={`relative flex min-h-16.5 items-center justify-between gap-3 rounded-lg border bg-white px-3 py-2.5 xl:h-105 xl:flex-col xl:items-stretch xl:justify-start xl:px-2.5 xl:py-3 ${isToday ? 'border-blue-700 ring-1 ring-blue-700' : 'border-slate-200'}`}
+              >
+                <div className="flex min-w-20 items-center gap-2 xl:block xl:w-full">
+                  <p className="text-xs leading-4 font-bold tracking-normal text-[#041B3C66] uppercase">
+                    {formatDay(day).split(',')[0]}
+                  </p>
+                  <h3
+                    className={`font-bold tracking-normal ${dayTotal > 0 ? 'text-lg leading-7 text-slate-900' : 'text-lg leading-7 text-[#041B3C99]'} lg:mt-1`}
+                  >
+                    {formatDay(day).split(', ')[1]}
                   </h3>
+                </div>
+                {isToday ? (
+                  <span className="bg-primary absolute -top-2.5 left-1/2 z-10 flex h-4.75 w-14 -translate-x-1/2 items-center justify-center rounded-xl px-2 py-0.5 text-[10px] leading-3.75 font-bold tracking-[1px] text-white uppercase">
+                    TODAY
+                  </span>
+                ) : null}
+                <div
+                  className={`min-w-0 flex-1 xl:mt-3 xl:flex-1 ${dayTotal === 0 && !calendarLoading ? 'flex items-center justify-center' : ''}`}
+                >
                   {calendarLoading ? (
-                    <div className="mt-3 h-12 animate-pulse rounded bg-slate-100" />
+                    <div className="h-5 animate-pulse rounded bg-slate-100" />
                   ) : dayTotal === 0 ? (
-                    <p className="mt-4 text-xs text-slate-400">No Tasks</p>
+                    <div className="flex flex-col items-center justify-center gap-2 xl:flex-1">
+                      <CalendarX className="size-8 text-slate-300" />
+                      <p className="text-xs leading-4 font-bold tracking-normal text-[#041B3C66] uppercase">
+                        NO TASKS
+                      </p>
+                    </div>
                   ) : (
-                    <ul className="mt-2 space-y-1.5">
+                    <ul className="flex flex-wrap justify-end gap-1 lg:flex-col lg:justify-start">
                       {statuses.map(([key, count]) => (
                         <li
                           key={key}
-                          className="flex items-center justify-between gap-2 text-[11px]"
+                          className={`flex items-center gap-1 rounded-sm px-1.5 py-1 text-[11px] leading-[16.5px] font-bold tracking-normal uppercase lg:justify-between lg:px-1.5 ${STATUS_PILL_STYLES[key]}`}
                         >
-                          <span className="flex min-w-0 items-center gap-1.5 text-slate-600">
+                          <span className="flex min-w-0 items-center gap-1">
                             <span
                               aria-hidden="true"
                               className="size-1.5 shrink-0 rounded-full"
                               style={{ backgroundColor: STATUS_COLORS[key] }}
                             />
-                            <span className="truncate">{statusName(key)}</span>
+                            <span className="truncate lg:max-w-20">
+                              {statusName(key).toUpperCase()}
+                            </span>
                           </span>
-                          <span className="font-semibold text-slate-900">
+                          <span className="text-[11px] leading-[16.5px] font-bold">
                             {count}
                           </span>
                         </li>
                       ))}
                     </ul>
                   )}
-                </article>
-              );
-            })}
-          </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
+      </section>
 
+      <section className="grid gap-4 lg:grid-cols-2 lg:gap-10">
         <section
           aria-labelledby="status-chart-title"
-          className="border-y border-slate-200 py-4 xl:border-y-0 xl:border-l xl:pl-6"
+          className="min-h-[312px] min-w-0 rounded-lg bg-white p-5 shadow-[0px_1px_2px_0px_#0000000D] md:p-8"
         >
           <h2
             id="status-chart-title"
-            className="text-base font-bold text-slate-900"
+            className="text-lg leading-7 font-bold text-slate-900"
           >
             Tasks by Status
           </h2>
           {calendarLoading ? (
             <div
               role="status"
-              className="mt-5 flex h-48 items-center justify-center"
+              className="mt-3 flex h-40 items-center justify-center"
             >
-              <div className="size-36 animate-pulse rounded-full bg-slate-100" />
+              <div className="size-32 animate-pulse rounded-full bg-slate-100" />
             </div>
           ) : chartTotal === 0 ? (
-            <p className="py-10 text-sm text-slate-500">
+            <p className="py-8 text-xs text-slate-500">
               No task data for this period.
             </p>
           ) : (
-            <>
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-5">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-6 sm:justify-start sm:gap-10">
+              <div
+                role="img"
+                aria-label={`${chartTotal} tasks by status`}
+                className="relative shrink-0 rounded-full"
+                style={{
+                  background: chartGradient,
+                  width: CHART_SIZE,
+                  height: CHART_SIZE,
+                }}
+              >
                 <div
-                  role="img"
-                  aria-label={`${chartTotal} tasks by status`}
-                  className="relative size-40 shrink-0 rounded-full"
-                  style={{ background: chartGradient }}
+                  className="absolute flex flex-col items-center justify-center rounded-full bg-white"
+                  style={{ inset: CHART_THICKNESS }}
                 >
-                  <div className="absolute inset-5 flex flex-col items-center justify-center rounded-full bg-white">
-                    <span className="text-2xl font-bold text-slate-900">
-                      {chartTotal}
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-500">
-                      Total
-                    </span>
-                  </div>
+                  <span className="text-[32px] leading-10 font-bold text-slate-900">
+                    {chartTotal}
+                  </span>
+                  <span className="text-sm leading-5 font-semibold text-slate-500">
+                    Total
+                  </span>
                 </div>
-                <ul className="min-w-36 space-y-2">
-                  {chartEntries.map((item) => (
-                    <li
-                      key={item.key}
-                      className="flex items-center justify-between gap-4 text-xs"
-                    >
-                      <span className="flex items-center gap-2 text-slate-600">
-                        <span
-                          className="size-2 rounded-full"
-                          style={{ backgroundColor: item.color }}
-                        />
-                        {statusName(item.key)}
-                      </span>
-                      <span className="font-bold text-slate-900">
-                        {item.count}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
               </div>
-            </>
+              <ul className="flex w-37 min-w-0 flex-col gap-4">
+                {chartEntries.map((item) => (
+                  <li key={item.key} className="flex items-start gap-3">
+                    <span
+                      aria-hidden="true"
+                      className="mt-1 size-3 shrink-0 rounded-full ring-1 ring-slate-200"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2 text-sm leading-5">
+                        <span className="truncate font-semibold text-slate-700">
+                          {statusName(item.key)}
+                        </span>
+                        <span className="font-bold text-slate-900">
+                          {item.count}
+                        </span>
+                      </div>
+                      <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-[#E8EDFF]">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${(item.count / chartTotal) * 100}%`,
+                            backgroundColor:
+                              item.key === 'TO_DO' ? '#9AA7D1' : item.color,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </section>
-      </section>
 
-      <section
-        aria-labelledby="projects-stats-title"
-        className="border-t border-slate-200 pt-4"
-      >
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2
-            id="projects-stats-title"
-            className="text-base font-bold text-slate-900"
-          >
-            All Projects
-          </h2>
-          <span className="text-xs text-slate-500">
-            Date-range counts; project and status filters are not supported
-            here.
-          </span>
-        </div>
-        {projectCountsError ? (
-          <ErrorPanel message={projectCountsError} onRetry={retryCounts} />
-        ) : null}
-        {projectCountsLoading ? (
-          <div role="status" aria-busy="true" className="space-y-2">
-            {[0, 1, 2].map((item) => (
-              <div
-                key={item}
-                className="h-11 animate-pulse border-b border-slate-200 bg-white"
-              />
-            ))}
+        <section
+          aria-labelledby="projects-stats-title"
+          className="min-h-[312px] min-w-0 rounded-lg bg-white p-5 shadow-[0px_1px_2px_0px_#0000000D] md:p-8"
+        >
+          <div className="mb-6 flex items-center justify-between gap-2">
+            <h2
+              id="projects-stats-title"
+              className="text-lg leading-7 font-bold text-slate-900"
+            >
+              All Projects
+            </h2>
           </div>
-        ) : !projectCountsError && (projectCounts?.length ?? 0) === 0 ? (
-          <p className="py-6 text-sm text-slate-500">
-            No project tasks found for this date range.
-          </p>
-        ) : (
-          <ul className="divide-y divide-slate-200 border-y border-slate-200 bg-white">
-            {projectCounts?.map((item) => (
-              <li
-                key={item.project_id}
-                className="flex items-center justify-between gap-4 px-3 py-3 text-sm"
-              >
-                <span className="min-w-0 truncate font-medium text-slate-800">
-                  {item.project_name}
-                </span>
-                <span className="shrink-0 font-bold text-slate-950 tabular-nums">
-                  {item.tasks_count} tasks
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+          {projectCountsError ? (
+            <ErrorPanel message={projectCountsError} onRetry={retryCounts} />
+          ) : null}
+          {projectCountsLoading ? (
+            <div role="status" aria-busy="true" className="space-y-1.5">
+              {[0, 1, 2].map((item) => (
+                <div
+                  key={item}
+                  className="h-9 animate-pulse border-b border-slate-200 bg-white"
+                />
+              ))}
+            </div>
+          ) : !projectCountsError && (projectCounts?.length ?? 0) === 0 ? (
+            <p className="py-6 text-xs text-slate-500">
+              No project tasks found for this date range.
+            </p>
+          ) : (
+            <ul className="space-y-4">
+              {projectCounts?.map((item) => (
+                <li
+                  key={item.project_id}
+                  className="flex items-center justify-between gap-4 text-xs leading-4"
+                >
+                  <span className="min-w-0 truncate font-bold text-[#041B3CB2]">
+                    {item.project_name}
+                  </span>
+                  <span className="shrink-0 font-bold text-slate-900 tabular-nums">
+                    {item.tasks_count} Tasks
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </section>
       <p className="sr-only" aria-live="polite">
         {calendarLoading ? 'Updating statistics' : (calendarError ?? '')}
