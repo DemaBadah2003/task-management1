@@ -1,0 +1,82 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Validate task board drag and drop",
+			"type": "shell",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"pnpm exec eslint src/components/tasks/TasksBoard.tsx src/components/tasks/TaskCard.tsx src/components/tasks/BoardColumn.tsx src/lib/tasks-api.ts && pnpm exec tsc --noEmit"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Lint drag and drop changes",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"exec",
+				"eslint",
+				"src/components/tasks/TasksBoard.tsx",
+				"src/components/tasks/TaskCard.tsx",
+				"src/components/tasks/BoardColumn.tsx",
+				"src/lib/tasks-api.ts"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Typecheck drag and drop changes",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"exec",
+				"tsc",
+				"--noEmit"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Build project after task board changes",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"build"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Review worktree changes",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		},
+		{
+			"label": "Inspect final task board diff",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"diff",
+				"--",
+				"README.md",
+				"package.json",
+				"pnpm-lock.yaml",
+				"src/components/tasks/TasksBoard.tsx",
+				"src/components/tasks/BoardColumn.tsx",
+				"src/components/tasks/TaskCard.tsx",
+				"src/lib/tasks-api.ts"
+			],
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}

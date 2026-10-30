@@ -71,6 +71,82 @@ export async function createTask(
   return Array.isArray(data) ? data[0] : data;
 }
 
+export async function updateTaskStatus(
+  taskId: string,
+  accessToken: string,
+  status: TaskStatus,
+): Promise<void> {
+  const url = new URL(`${SUPABASE_URL}/rest/v1/tasks`);
+  url.searchParams.set("id", `eq.${taskId}`);
+
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      ...buildHeaders(accessToken),
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!res.ok) {
+    throw new ApiError(
+      await readError(res, "Failed to update task status"),
+      res.status,
+    );
+  }
+}
+
+export interface UpdateTaskPayload {
+  title?: string;
+  description?: string | null;
+  assignee_id?: string | null;
+  due_date?: string | null;
+  epic_id?: string | null;
+  status?: TaskStatus;
+}
+
+const TASK_UPDATE_FIELDS = new Set([
+  "title",
+  "description",
+  "assignee_id",
+  "due_date",
+  "epic_id",
+  "status",
+]);
+
+export async function updateTaskDetails(
+  taskId: string,
+  accessToken: string,
+  payload: UpdateTaskPayload,
+): Promise<void> {
+  const fields = Object.keys(payload);
+  if (
+    fields.length === 0 ||
+    fields.some((field) => !TASK_UPDATE_FIELDS.has(field))
+  ) {
+    throw new TypeError("Task updates must contain supported fields");
+  }
+
+  const url = new URL(`${SUPABASE_URL}/rest/v1/tasks`);
+  url.searchParams.set("id", `eq.${taskId}`);
+
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      ...buildHeaders(accessToken),
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new ApiError(
+      await readError(res, "Failed to update task. Please try again."),
+      res.status,
+    );
+  }
+}
+
 export interface TaskDetails extends Omit<Task, "status"> {
   status: string;
   priority: string | null;

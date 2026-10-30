@@ -96,3 +96,7 @@ This document provides a comprehensive summary of all reusable UI components ide
 * **File Location**: [`src/components/projects/ProjectsLoadingSkeleton.tsx`](file:///d:/project/taskly-project/src/components/projects/ProjectsLoadingSkeleton.tsx)
 * **Purpose & Reusability**: Implements skeleton loading pattern to improve perceived performance while fetching project list data asynchronously.
 * **Used In**: `/project` during initial data loading state.
+
+## Project Tasks Board
+
+The Project Tasks Board uses [`@dnd-kit/react`](https://dndkit.com/react) for drag and drop. Its React hooks support draggable task cards and status-column drop targets, while its default pointer and keyboard sensors provide mouse, touch, and keyboard interaction. Task moves are persisted through the existing Supabase tasks API integration.

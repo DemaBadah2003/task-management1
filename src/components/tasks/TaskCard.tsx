@@ -1,5 +1,6 @@
 import CalendarDays from '@/src/components/icons/CalendarDays';
 import { TASK_STATUSES } from '@/src/constants/task-statuses';
+import { useDraggable } from '@dnd-kit/react';
 import type { ProjectMember, Task } from '@/src/types/task';
 
 function formatDueDate(value: string) {
@@ -38,39 +39,74 @@ export default function TaskCard({
   task,
   assignee,
   onClick,
+  isUpdating = false,
 }: {
   task: Task;
   assignee?: ProjectMember;
   onClick?: () => void;
+  isUpdating?: boolean;
 }) {
   const due = task.due_date ? formatDueDate(task.due_date) : null;
   const status = TASK_STATUSES.find((item) => item.key === task.status);
+  const { ref, handleRef, isDragging } = useDraggable({
+    id: task.id,
+    type: 'task',
+    data: { kind: 'task', taskId: task.id, status: task.status },
+    disabled: isUpdating,
+  });
 
   return (
     <article
-      role="button"
-      tabIndex={0}
+      ref={ref}
+      aria-busy={isUpdating || undefined}
       onClick={onClick}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          onClick?.();
-        }
-      }}
-      aria-label={`Open task details: ${task.title}`}
-      className="flex min-h-[88px] min-w-0 cursor-pointer flex-col rounded-lg border border-slate-100 bg-white p-3 text-left shadow-sm transition hover:border-blue-200 hover:shadow-md focus-visible:outline-2 focus-visible:outline-blue-600"
+      className={`flex min-h-[88px] min-w-0 cursor-pointer flex-col rounded-lg border border-slate-100 bg-white p-3 text-left shadow-sm transition hover:border-blue-200 hover:shadow-md ${isDragging ? 'opacity-50' : ''}`}
     >
-      {status ? (
-        <div className="mb-2 flex justify-end md:hidden">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        {status ? (
           <span
-            className={`rounded-sm px-1.5 py-0.5 text-[8px] leading-none font-bold ${status.badgeClass}`}
+            className={`rounded-sm px-1.5 py-0.5 text-[8px] leading-none font-bold md:hidden ${status.badgeClass}`}
           >
             {status.label}
           </span>
-        </div>
-      ) : null}
+        ) : (
+          <span />
+        )}
+        <button
+          ref={handleRef}
+          type="button"
+          disabled={isUpdating}
+          aria-label={`Move ${task.title} to another status`}
+          title="Drag to move task"
+          onClick={(event) => event.stopPropagation()}
+          className="flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-blue-600 active:cursor-grabbing disabled:cursor-wait disabled:opacity-50"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            className="size-4"
+          >
+            <circle cx="5" cy="3" r="1" />
+            <circle cx="11" cy="3" r="1" />
+            <circle cx="5" cy="8" r="1" />
+            <circle cx="11" cy="8" r="1" />
+            <circle cx="5" cy="13" r="1" />
+            <circle cx="11" cy="13" r="1" />
+          </svg>
+        </button>
+      </div>
       <h3 className="break-words text-xs leading-4 font-semibold text-slate-800">
-        {task.title}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onClick?.();
+          }}
+          className="text-left focus-visible:outline-2 focus-visible:outline-blue-600"
+        >
+          {task.title}
+        </button>
       </h3>
       <div className="mt-auto flex min-w-0 items-center justify-between gap-2 pt-3">
         {due ? (

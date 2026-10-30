@@ -1,17 +1,22 @@
 import type { RefObject } from 'react';
 import type { TaskDetails } from '@/src/lib/tasks-api';
-import { ChevronDownIcon } from './icons';
+import { TASK_STATUSES } from '@/src/constants/task-statuses';
 import MetadataField from './MetadataField';
 import { statusLabel } from './utils';
+import type { TaskDetailsUpdateHandler } from './types';
 
 interface TaskDetailsHeaderProps {
   task: TaskDetails | null;
+  savingStatus: boolean;
+  onUpdate: TaskDetailsUpdateHandler;
   closeButtonRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
 }
 
 export default function TaskDetailsHeader({
   task,
+  savingStatus,
+  onUpdate,
   closeButtonRef,
   onClose,
 }: TaskDetailsHeaderProps) {
@@ -34,10 +39,30 @@ export default function TaskDetailsHeader({
       {task ? (
         <div className="absolute top-8 right-8 hidden w-[276px] md:block">
           <MetadataField label="Status">
-            <span className="text-xs leading-[18px] font-medium tracking-normal text-[#041B3C]">
-              {statusLabel(task.status)}
-            </span>
-            <ChevronDownIcon className="ml-auto size-3 text-[#737685]" />
+            <select
+              aria-label="Task status"
+              value={task.status}
+              disabled={savingStatus}
+              aria-busy={savingStatus}
+              onChange={(event) => {
+                const status = TASK_STATUSES.find(
+                  (item) => item.key === event.target.value
+                );
+                if (status) void onUpdate({ status: status.key });
+              }}
+              className="min-w-0 flex-1 bg-transparent text-xs font-medium text-[#041B3C] outline-none disabled:opacity-60"
+            >
+              {TASK_STATUSES.map((status) => (
+                <option key={status.key} value={status.key}>
+                  {statusLabel(status.key)}
+                </option>
+              ))}
+            </select>
+            {savingStatus ? (
+              <span role="status" className="text-[10px] text-[#737685]">
+                Saving...
+              </span>
+            ) : null}
           </MetadataField>
         </div>
       ) : null}

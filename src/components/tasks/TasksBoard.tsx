@@ -1,17 +1,20 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { DragDropProvider } from '@dnd-kit/react';
+import type { DragEndEvent } from '@dnd-kit/react';
+import { toast } from 'sonner';
 import { TASK_STATUSES } from '@/src/constants/task-statuses';
 import { useAccessToken } from '@/src/hooks/useAccessToken';
 import { useMediaQuery } from '@/src/hooks/useMediaQuery';
 import { useCreateTaskModal } from '@/src/context/CreateTaskModalContext';
 import { ApiError } from '@/src/lib/api/members';
 import { PAGE_SIZE } from '@/src/lib/pagination';
-import { fetchProjectTasksPage } from '@/src/lib/tasks-api';
+import { fetchProjectTasksPage, updateTaskStatus } from '@/src/lib/tasks-api';
 import useTaskFormEpics from '@/src/hooks/useTaskFormEpics';
 import useTaskFormMembers from '@/src/hooks/useTaskFormMembers';
-import type { ProjectMember, Task } from '@/src/types/task';
+import type { ProjectMember, Task, TaskStatus } from '@/src/types/task';
 import BoardColumn from './BoardColumn';
 import TaskDetailsModal from './TaskDetailsModal';
 import TasksListView from './TasksListView';
@@ -36,6 +39,12 @@ interface BoardPageState {
 
 type TaskView = 'board' | 'list';
 
+type BoardDragData =
+  | { kind: 'task'; taskId: string; status: TaskStatus }
+  | { kind: 'status'; status: TaskStatus };
+
+const EMPTY_TASKS: Task[] = [];
+
 export default function TasksBoard({
   projectId,
   searchTerm,
@@ -44,8 +53,18 @@ export default function TasksBoard({
   searchTerm: string;
 }) {
   const { token, loading: tokenLoading } = useAccessToken();
-  const { members } = useTaskFormMembers(projectId);
-  const { epics } = useTaskFormEpics(projectId);
+  const {
+    members,
+    isLoading: membersLoading,
+    error: membersError,
+    retry: retryMembers,
+  } = useTaskFormMembers(projectId);
+  const {
+    epics,
+    isLoading: epicsLoading,
+    error: epicsError,
+    retry: retryEpics,
+  } = useTaskFormEpics(projectId);
   const { lastCreatedTask } = useCreateTaskModal();
   const router = useRouter();
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -53,6 +72,11 @@ export default function TasksBoard({
   const [initialAttempt, setInitialAttempt] = useState(0);
   const [boardPage, setBoardPage] = useState<BoardPageState | null>(null);
   const [selectedTask, setSelectedTask] = useState<SelectedTask | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [updatingTaskIds, setUpdatingTaskIds] = useState<Set<string>>(
+    () => new Set()
+  );
+  const statusUpdatesInFlight = useRef(new Set<string>());
   const inFlightRequest = useRef<string | null>(null);
   const mobileSentinelRef = useRef<HTMLDivElement | null>(null);
   const boardKey = `${projectId}:${searchTerm}:${token ? 'authenticated' : 'anonymous'}:${initialAttempt}`;
@@ -63,7 +87,7 @@ export default function TasksBoard({
     !tokenLoading && !token
       ? 'Your session has expired. Please sign in again.'
       : (currentPage?.initialError ?? null);
-  const loadedTasks = currentPage?.tasks ?? [];
+  const loadedTasks = currentPage?.tasks ?? EMPTY_TASKS;
   const createdTask =
     !searchTerm && lastCreatedTask?.project_id === projectId
       ? lastCreatedTask
@@ -71,10 +95,13 @@ export default function TasksBoard({
   const isCreatedTaskLoaded = createdTask
     ? loadedTasks.some((task) => task.id === createdTask.id)
     : false;
-  const boardTasks =
-    createdTask && !isCreatedTaskLoaded
-      ? [...loadedTasks, createdTask]
-      : loadedTasks;
+  const boardTasks = useMemo(
+    () =>
+      createdTask && !isCreatedTaskLoaded
+        ? [...loadedTasks, createdTask]
+        : loadedTasks,
+    [createdTask, isCreatedTaskLoaded, loadedTasks]
+  );
   const totalCount =
     currentPage?.totalCount === null || currentPage?.totalCount === undefined
       ? null
@@ -254,9 +281,109 @@ export default function TasksBoard({
     [projectId]
   );
   const closeTaskDetails = useCallback(() => setSelectedTask(null), []);
+  const handleTaskUpdated = useCallback(
+    (taskId: string, updates: Partial<Task>) => {
+      setBoardPage((current) =>
+        current
+          ? {
+              ...current,
+              tasks: current.tasks.map((task) =>
+                task.id === taskId ? { ...task, ...updates } : task
+              ),
+            }
+          : current
+      );
+    },
+    []
+  );
   const retryBoard = useCallback(() => {
     setInitialAttempt((value) => value + 1);
   }, []);
+  const moveTaskToStatus = useCallback(
+    async (task: Task, destinationStatus: TaskStatus) => {
+      if (task.status === destinationStatus) return;
+      if (statusUpdatesInFlight.current.has(task.id)) return;
+      if (!token) {
+        toast.error('Your session has expired. Please sign in again.');
+        router.replace('/login');
+        return;
+      }
+
+      const originalStatus = task.status;
+      statusUpdatesInFlight.current.add(task.id);
+      setUpdatingTaskIds((current) => new Set(current).add(task.id));
+      setBoardPage((current) => {
+        if (!current || current.key !== boardKey) return current;
+        const alreadyLoaded = current.tasks.some((item) => item.id === task.id);
+        return {
+          ...current,
+          tasks: alreadyLoaded
+            ? current.tasks.map((item) =>
+                item.id === task.id
+                  ? { ...item, status: destinationStatus }
+                  : item
+              )
+            : [...current.tasks, { ...task, status: destinationStatus }],
+        };
+      });
+
+      try {
+        await updateTaskStatus(task.id, token, destinationStatus);
+      } catch (error: unknown) {
+        setBoardPage((current) => {
+          if (!current || current.key !== boardKey) return current;
+          return {
+            ...current,
+            tasks: current.tasks.map((item) =>
+              item.id === task.id && item.status === destinationStatus
+                ? { ...item, status: originalStatus }
+                : item
+            ),
+          };
+        });
+        if (error instanceof ApiError && error.status === 401) {
+          router.replace('/login');
+        }
+        toast.error(
+          error instanceof Error
+            ? `Failed to update task status: ${error.message}`
+            : 'Failed to update task status. Please try again.'
+        );
+      } finally {
+        statusUpdatesInFlight.current.delete(task.id);
+        setUpdatingTaskIds((current) => {
+          const next = new Set(current);
+          next.delete(task.id);
+          return next;
+        });
+      }
+    },
+    [boardKey, router, token]
+  );
+  const handleDragStart = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setIsDragging(false);
+      if (event.canceled) return;
+
+      const source = event.operation.source;
+      const target = event.operation.target;
+      if (
+        source?.data.kind !== 'task' ||
+        target?.data.kind !== 'status' ||
+        !TASK_STATUSES.some((status) => status.key === target.data.status)
+      ) {
+        return;
+      }
+
+      const task = boardTasks.find((item) => item.id === source.data.taskId);
+      if (!task || task.status === target.data.status) return;
+      void moveTaskToStatus(task, target.data.status);
+    },
+    [boardTasks, moveTaskToStatus]
+  );
 
   useEffect(() => {
     if (
@@ -342,22 +469,29 @@ export default function TasksBoard({
               aria-label="Project tasks board"
               className="flex w-full min-w-0 flex-col gap-4 md:flex-row md:gap-4 md:overflow-x-auto md:overflow-y-hidden"
             >
-              {TASK_STATUSES.map((status) => (
-                <BoardColumn
-                  key={status.key}
-                  status={status}
-                  tasks={boardTasks.filter(
-                    (task) => task.status === status.key
-                  )}
-                  loading={boardLoading}
-                  infiniteEnabled={!isMobile}
-                  hasMore={hasMore}
-                  loadMoreError={Boolean(currentPage?.loadMoreError)}
-                  onLoadMore={loadMore}
-                  members={members}
-                  onTaskSelect={openTaskDetails}
-                />
-              ))}
+              <DragDropProvider<BoardDragData>
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                {TASK_STATUSES.map((status) => (
+                  <BoardColumn
+                    key={status.key}
+                    status={status}
+                    tasks={boardTasks.filter(
+                      (task) => task.status === status.key
+                    )}
+                    loading={boardLoading}
+                    isDragging={isDragging}
+                    updatingTaskIds={updatingTaskIds}
+                    infiniteEnabled={!isMobile}
+                    hasMore={hasMore}
+                    loadMoreError={Boolean(currentPage?.loadMoreError)}
+                    onLoadMore={loadMore}
+                    members={members}
+                    onTaskSelect={openTaskDetails}
+                  />
+                ))}
+              </DragDropProvider>
             </div>
           )}
           {isMobile && hasMore && !currentPage?.loadMoreError ? (
@@ -429,7 +563,14 @@ export default function TasksBoard({
             email: member.email ?? null,
             avatarUrl: member.avatar_url ?? null,
           }))}
+          projectMembersLoading={membersLoading}
+          projectMembersError={membersError}
           projectEpics={epics}
+          projectEpicsLoading={epicsLoading}
+          projectEpicsError={epicsError}
+          onRefreshProjectMembers={retryMembers}
+          onRefreshProjectEpics={retryEpics}
+          onTaskUpdated={handleTaskUpdated}
           onClose={closeTaskDetails}
         />
       ) : null}

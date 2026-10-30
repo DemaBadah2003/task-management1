@@ -10,6 +10,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\""
   },
   "dependencies": {
+    "@dnd-kit/react": "^0.5.1",
     "@fontsource/inter": "^5.3.0",
     "@hookform/resolvers": "^5.9.1",
     "@svgr/webpack": "^8.1.0",

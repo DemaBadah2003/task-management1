@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { TaskDetails } from '@/src/lib/tasks-api';
 import { useAccessToken } from '@/src/hooks/useAccessToken';
 import { ApiError } from '@/src/lib/api/members';
 import { fetchProjectTaskDetails } from '@/src/lib/tasks-api';
@@ -54,6 +55,16 @@ export function useTaskDetails(projectId: string, taskId: string) {
         : { key: requestKey, status: 'loading' };
 
   const retry = () => setAttempt((value) => value + 1);
+  const updateTask = useCallback(
+    (updates: Partial<TaskDetails>) => {
+      setRequestState((current) =>
+        current?.key === requestKey && current.status === 'success'
+          ? { ...current, task: { ...current.task, ...updates } }
+          : current,
+      );
+    },
+    [requestKey],
+  );
 
-  return { currentState, retry };
+  return { currentState, retry, token, updateTask };
 }

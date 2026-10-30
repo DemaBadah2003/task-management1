@@ -9,11 +9,11 @@ import { ApiError, fetchProjectMembers } from '@/src/lib/api/members';
 import { getProjectEpicDetails, updateEpicField } from '@/src/lib/api/epics';
 import { useCreateTaskModal } from '@/src/context/CreateTaskModalContext';
 import { getSessionToken } from '@/src/lib/api/user';
-import { fetchEpicTasks } from '@/src/lib/tasks-api';
+import { fetchEpicTasks, fetchProjectEpics } from '@/src/lib/tasks-api';
 import TaskDetailsModal from '@/src/components/tasks/TaskDetailsModal';
 import type { Epic, EpicUser } from '@/src/types/epic';
 import type { ProjectMember } from '@/src/types/member';
-import type { Task } from '@/src/types/task';
+import type { ProjectEpic, Task } from '@/src/types/task';
 
 interface EpicDetailsModalProps {
   projectId: string;
@@ -42,7 +42,11 @@ const EMPTY_SAVING_FIELDS: Record<EditableEpicField, boolean> = {
 function initials(user?: EpicUser | null) {
   const parts = user?.name?.trim().split(/\s+/).filter(Boolean) ?? [];
   if (parts.length > 1) {
-    return parts.slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+    return parts
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
   }
   return parts[0]?.slice(0, 2).toUpperCase() || '?';
 }
@@ -191,7 +195,11 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
 
 function ModalLoading() {
   return (
-    <div aria-busy="true" aria-label="Loading epic details" className="space-y-4">
+    <div
+      aria-busy="true"
+      aria-label="Loading epic details"
+      className="space-y-4"
+    >
       <div className="flex justify-between">
         <div className="h-3 w-20 animate-pulse rounded bg-[#E5EBFF]" />
         <div className="h-3 w-20 animate-pulse rounded bg-[#E5EBFF]" />
@@ -222,11 +230,19 @@ export function EpicDetailsModal({
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersError, setMembersError] = useState<string | null>(null);
+  const [taskProjectEpics, setTaskProjectEpics] = useState<ProjectEpic[]>([]);
+  const [taskProjectEpicsLoaded, setTaskProjectEpicsLoaded] = useState(false);
+  const [taskProjectEpicsLoading, setTaskProjectEpicsLoading] = useState(false);
+  const [taskProjectEpicsError, setTaskProjectEpicsError] = useState<
+    string | null
+  >(null);
+  const [taskProjectEpicsAttempt, setTaskProjectEpicsAttempt] = useState(0);
   const [epicTasks, setEpicTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<{
     taskId: string;
     assignee?: { name: string | null; avatarUrl: string | null };
   } | null>(null);
+  const selectedTaskId = selectedTask?.taskId ?? null;
   const [tasksLoading, setTasksLoading] = useState(false);
   const [tasksError, setTasksError] = useState<string | null>(null);
   const [tasksAttempt, setTasksAttempt] = useState(0);
@@ -282,7 +298,7 @@ export function EpicDetailsModal({
           projectId,
           epicId,
           token,
-          controller.signal,
+          controller.signal
         );
         if (!isActive) return;
         setResult({ projectId, epicId, attempt, epic, error: null });
@@ -300,7 +316,7 @@ export function EpicDetailsModal({
         }
         console.error(
           `Failed to load details for epic ${epicId} in project ${projectId}:`,
-          error,
+          error
         );
         setResult({
           projectId,
@@ -363,7 +379,7 @@ export function EpicDetailsModal({
         const members = await fetchProjectMembers(
           projectId,
           token,
-          controller.signal,
+          controller.signal
         );
         if (!isActive) return;
         setProjectMembers(members);
@@ -385,6 +401,52 @@ export function EpicDetailsModal({
       controller.abort();
     };
   }, [membersAttempt, projectId]);
+
+  useEffect(() => {
+    if (!selectedTaskId) return;
+
+    const controller = new AbortController();
+    let isActive = true;
+
+    async function loadProjectEpics() {
+      const token = getSessionToken();
+      if (!token) {
+        setTaskProjectEpicsError(
+          'Your session has expired. Please sign in again.'
+        );
+        return;
+      }
+
+      setTaskProjectEpicsLoading(true);
+      setTaskProjectEpicsLoaded(false);
+      setTaskProjectEpicsError(null);
+      try {
+        const epics = await fetchProjectEpics(
+          projectId,
+          token,
+          controller.signal
+        );
+        if (isActive) {
+          setTaskProjectEpics(epics);
+          setTaskProjectEpicsLoaded(true);
+        }
+      } catch (error) {
+        if (!isActive || controller.signal.aborted) return;
+        if (error instanceof ApiError && error.status === 401) {
+          router.replace('/login');
+        }
+        setTaskProjectEpicsError('Failed to load project epics.');
+      } finally {
+        if (isActive) setTaskProjectEpicsLoading(false);
+      }
+    }
+
+    void loadProjectEpics();
+    return () => {
+      isActive = false;
+      controller.abort();
+    };
+  }, [projectId, router, selectedTaskId, taskProjectEpicsAttempt]);
 
   useEffect(() => {
     if (!currentEpicKey) return;
@@ -410,7 +472,7 @@ export function EpicDetailsModal({
           projectId,
           epicId,
           token,
-          controller.signal,
+          controller.signal
         );
         if (isActive) setEpicTasks(tasks);
       } catch (error) {
@@ -419,7 +481,7 @@ export function EpicDetailsModal({
         setTasksError(
           error instanceof ApiError && error.status === 401
             ? 'Your session has expired. Please sign in again.'
-            : 'Failed to load epic tasks.',
+            : 'Failed to load epic tasks.'
         );
       } finally {
         if (isActive) setTasksLoading(false);
@@ -433,23 +495,26 @@ export function EpicDetailsModal({
     };
   }, [currentEpicKey, epicId, projectId, tasksAttempt]);
 
-  useEffect(() => {
-    if (
-      lastCreatedTask?.project_id !== projectId ||
-      lastCreatedTask.epic_id !== epicId
-    ) {
-      return;
-    }
-
-    setEpicTasks((previousTasks) =>
-      previousTasks.some((task) => task.id === lastCreatedTask.id)
-        ? previousTasks
-        : [...previousTasks, lastCreatedTask],
-    );
-  }, [epicId, lastCreatedTask, projectId]);
-
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
   const closeTaskDetails = useCallback(() => setSelectedTask(null), []);
+  const handleTaskUpdated = useCallback(
+    (taskId: string, updates: Partial<Task>) => {
+      setEpicTasks((current) =>
+        updates.epic_id !== undefined && updates.epic_id !== epicId
+          ? current.filter((task) => task.id !== taskId)
+          : current.map((task) =>
+              task.id === taskId ? { ...task, ...updates } : task
+            )
+      );
+    },
+    [epicId]
+  );
+  const visibleEpicTasks =
+    lastCreatedTask?.project_id === projectId &&
+    lastCreatedTask.epic_id === epicId &&
+    !epicTasks.some((task) => task.id === lastCreatedTask.id)
+      ? [...epicTasks, lastCreatedTask]
+      : epicTasks;
 
   const beginFieldUpdate = useCallback((field: EditableEpicField) => {
     if (savingFieldsRef.current.has(field)) return false;
@@ -497,7 +562,7 @@ export function EpicDetailsModal({
       setResult((prev) =>
         prev && prev.epic
           ? { ...prev, epic: { ...prev.epic, title: nextValue } }
-          : prev,
+          : prev
       );
       toast.success('Epic title updated');
     } catch {
@@ -505,7 +570,7 @@ export function EpicDetailsModal({
       setResult((prev) =>
         prev && prev.epic
           ? { ...prev, epic: { ...prev.epic, title: previousValue } }
-          : prev,
+          : prev
       );
       toast.error('Failed to update epic. Please try again.');
     } finally {
@@ -528,9 +593,7 @@ export function EpicDetailsModal({
     const previousValue = currentResult.epic.description?.trim()
       ? currentResult.epic.description
       : null;
-    const normalizedValue = descriptionValue.trim()
-      ? descriptionValue
-      : null;
+    const normalizedValue = descriptionValue.trim() ? descriptionValue : null;
 
     if (normalizedValue === previousValue) {
       setDescriptionValue(previousValue ?? '');
@@ -555,7 +618,7 @@ export function EpicDetailsModal({
       setResult((prev) =>
         prev && prev.epic
           ? { ...prev, epic: { ...prev.epic, description: normalizedValue } }
-          : prev,
+          : prev
       );
       toast.success('Epic description updated');
     } catch {
@@ -563,7 +626,7 @@ export function EpicDetailsModal({
       setResult((prev) =>
         prev && prev.epic
           ? { ...prev, epic: { ...prev.epic, description: previousValue } }
-          : prev,
+          : prev
       );
       toast.error('Failed to update epic. Please try again.');
     } finally {
@@ -579,66 +642,72 @@ export function EpicDetailsModal({
     projectId,
   ]);
 
-  const handleDeadlineChange = useCallback(async (nextValue: string) => {
-    if (!currentResult?.epic) return;
-    if (savingFieldsRef.current.has('deadline')) return;
+  const handleDeadlineChange = useCallback(
+    async (nextValue: string) => {
+      if (!currentResult?.epic) return;
+      if (savingFieldsRef.current.has('deadline')) return;
 
-    const previousValue = currentResult.epic.deadline?.slice(0, 10) ?? null;
-    const normalizedValue = nextValue || null;
+      const previousValue = currentResult.epic.deadline?.slice(0, 10) ?? null;
+      const normalizedValue = nextValue || null;
 
-    if (normalizedValue === previousValue) {
-      setDeadlineValue(previousValue ?? '');
-      return;
-    }
+      if (normalizedValue === previousValue) {
+        setDeadlineValue(previousValue ?? '');
+        return;
+      }
 
-    if (!beginFieldUpdate('deadline')) return;
+      if (!beginFieldUpdate('deadline')) return;
 
-    setDeadlineValue(normalizedValue ?? '');
-    const token = getSessionToken();
-    if (!token) {
-      setDeadlineValue(previousValue ?? '');
-      toast.error('Your session is unavailable. Please sign in again.');
-      endFieldUpdate('deadline');
-      return;
-    }
-
-    try {
-      await updateEpicField(projectId, epicId, token, {
-        deadline: normalizedValue,
-      });
-      onEpicUpdated(epicId, { deadline: normalizedValue });
-      setResult((prev) =>
-        prev && prev.epic
-          ? { ...prev, epic: { ...prev.epic, deadline: normalizedValue } }
-          : prev,
-      );
       setDeadlineValue(normalizedValue ?? '');
-      toast.success('Epic deadline updated');
-    } catch {
-      setDeadlineValue(previousValue ?? '');
-      setResult((prev) =>
-        prev && prev.epic
-          ? { ...prev, epic: { ...prev.epic, deadline: previousValue } }
-          : prev,
-      );
-      toast.error('Failed to update epic. Please try again.');
-    } finally {
-      endFieldUpdate('deadline');
-    }
-  }, [
-    beginFieldUpdate,
-    currentResult,
-    endFieldUpdate,
-    epicId,
-    onEpicUpdated,
-    projectId,
-  ]);
+      const token = getSessionToken();
+      if (!token) {
+        setDeadlineValue(previousValue ?? '');
+        toast.error('Your session is unavailable. Please sign in again.');
+        endFieldUpdate('deadline');
+        return;
+      }
+
+      try {
+        await updateEpicField(projectId, epicId, token, {
+          deadline: normalizedValue,
+        });
+        onEpicUpdated(epicId, { deadline: normalizedValue });
+        setResult((prev) =>
+          prev && prev.epic
+            ? { ...prev, epic: { ...prev.epic, deadline: normalizedValue } }
+            : prev
+        );
+        setDeadlineValue(normalizedValue ?? '');
+        toast.success('Epic deadline updated');
+      } catch {
+        setDeadlineValue(previousValue ?? '');
+        setResult((prev) =>
+          prev && prev.epic
+            ? { ...prev, epic: { ...prev.epic, deadline: previousValue } }
+            : prev
+        );
+        toast.error('Failed to update epic. Please try again.');
+      } finally {
+        endFieldUpdate('deadline');
+      }
+    },
+    [
+      beginFieldUpdate,
+      currentResult,
+      endFieldUpdate,
+      epicId,
+      onEpicUpdated,
+      projectId,
+    ]
+  );
 
   const handleAssigneeSelect = useCallback(
     async (memberId: string | null) => {
       if (!currentResult?.epic) return;
       if (savingFieldsRef.current.has('assignee')) return;
-      if (memberId && !projectMembers.some((member) => member.id === memberId)) {
+      if (
+        memberId &&
+        !projectMembers.some((member) => member.id === memberId)
+      ) {
         return;
       }
 
@@ -660,7 +729,7 @@ export function EpicDetailsModal({
       }
 
       const nextMember = memberId
-        ? projectMembers.find((member) => member.id === memberId) ?? null
+        ? (projectMembers.find((member) => member.id === memberId) ?? null)
         : null;
 
       setResult((prev) =>
@@ -672,7 +741,7 @@ export function EpicDetailsModal({
                 assignee: toEpicUser(nextMember),
               },
             }
-          : prev,
+          : prev
       );
 
       try {
@@ -689,14 +758,14 @@ export function EpicDetailsModal({
                   assignee: toEpicUser(nextMember),
                 },
               }
-            : prev,
+            : prev
         );
         toast.success('Epic assignee updated');
       } catch {
         setResult((prev) =>
           prev && prev.epic
             ? { ...prev, epic: { ...prev.epic, assignee: previousAssignee } }
-            : prev,
+            : prev
         );
         toast.error('Failed to update epic. Please try again.');
       } finally {
@@ -712,7 +781,7 @@ export function EpicDetailsModal({
       onEpicUpdated,
       projectId,
       projectMembers,
-    ],
+    ]
   );
 
   useEffect(() => {
@@ -724,7 +793,7 @@ export function EpicDetailsModal({
       if (selectedTask || event.key !== 'Tab' || !dialogRef.current) return;
 
       const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
       if (!focusable.length) return;
       const first = focusable[0];
@@ -845,7 +914,7 @@ export function EpicDetailsModal({
                     disabled={savingFields.title}
                     aria-busy={savingFields.title}
                     aria-label="Epic title"
-                    className="min-h-9 w-full rounded-md border border-[#D7E2FF] bg-white px-2.5 py-1.5 text-sm leading-5 font-semibold text-[#041B3C] outline-none ring-0 focus:border-[#003D9B]"
+                    className="min-h-9 w-full rounded-md border border-[#D7E2FF] bg-white px-2.5 py-1.5 text-sm leading-5 font-semibold text-[#041B3C] ring-0 outline-none focus:border-[#003D9B]"
                   />
                   {savingFields.title ? (
                     <span role="status" className="text-xs text-[#737685]">
@@ -854,13 +923,15 @@ export function EpicDetailsModal({
                   ) : null}
                   <textarea
                     value={descriptionValue}
-                    onChange={(event) => setDescriptionValue(event.target.value)}
+                    onChange={(event) =>
+                      setDescriptionValue(event.target.value)
+                    }
                     onBlur={handleDescriptionBlur}
                     placeholder="No description provided"
                     disabled={savingFields.description}
                     aria-busy={savingFields.description}
                     aria-label="Epic description"
-                    className="min-h-[106px] w-full resize-none whitespace-pre-wrap break-words rounded-md border border-[#D7E2FF] bg-white px-2.5 py-2 text-xs leading-5 text-[#434654] outline-none focus:border-[#003D9B]"
+                    className="min-h-[106px] w-full resize-none rounded-md border border-[#D7E2FF] bg-white px-2.5 py-2 text-xs leading-5 break-words whitespace-pre-wrap text-[#434654] outline-none focus:border-[#003D9B]"
                   />
                   {savingFields.description ? (
                     <span role="status" className="text-xs text-[#737685]">
@@ -960,7 +1031,9 @@ export function EpicDetailsModal({
                               <button
                                 key={member.id}
                                 type="button"
-                                onClick={() => void handleAssigneeSelect(member.id)}
+                                onClick={() =>
+                                  void handleAssigneeSelect(member.id)
+                                }
                                 disabled={savingFields.assignee}
                                 className="flex w-full items-center gap-2 rounded px-2 py-2 text-left text-xs font-medium text-[#041B3C] hover:bg-[#F1F3FF]"
                               >
@@ -983,7 +1056,9 @@ export function EpicDetailsModal({
                                     })}
                                   </span>
                                 )}
-                                <span className="min-w-0 truncate">{member.name}</span>
+                                <span className="min-w-0 truncate">
+                                  {member.name}
+                                </span>
                               </button>
                             ))
                           )}
@@ -1025,7 +1100,10 @@ export function EpicDetailsModal({
                       className="h-9 w-full rounded-md border border-[#D7E2FF] bg-white px-2.5 py-1.5 text-xs text-[#041B3C] outline-none focus:border-[#003D9B]"
                     />
                     {savingFields.deadline ? (
-                      <span role="status" className="mt-1 block text-xs text-[#737685]">
+                      <span
+                        role="status"
+                        className="mt-1 block text-xs text-[#737685]"
+                      >
                         Saving deadline...
                       </span>
                     ) : null}
@@ -1089,11 +1167,12 @@ export function EpicDetailsModal({
                         </button>
                       )}
                     </div>
-                  ) : epicTasks.length > 0 ? (
+                  ) : visibleEpicTasks.length > 0 ? (
                     <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
-                      {epicTasks.map((task) => {
+                      {visibleEpicTasks.map((task) => {
                         const member = projectMembers.find(
-                          (projectMember) => projectMember.id === task.assignee_id,
+                          (projectMember) =>
+                            projectMember.id === task.assignee_id
                         );
 
                         return (
@@ -1114,7 +1193,7 @@ export function EpicDetailsModal({
                             aria-label={`Open task details: ${task.title}`}
                             className="w-full rounded-md border border-[#E5EAF5] bg-white px-3 py-2.5 text-left hover:border-[#D7E2FF] focus-visible:outline-2 focus-visible:outline-[#003D9B]"
                           >
-                            <h4 className="break-words text-[10px] leading-4 font-semibold text-[#041B3C]">
+                            <h4 className="text-[10px] leading-4 font-semibold break-words text-[#041B3C]">
                               {task.title}
                             </h4>
                             <div className="mt-2 flex items-center justify-between gap-3">
@@ -1166,7 +1245,10 @@ export function EpicDetailsModal({
                         aria-hidden="true"
                         className="mb-2 flex size-12 items-center justify-center rounded-xl bg-[#D7E2FF]"
                       >
-                        <AddTaskIcon aria-hidden="true" className="h-4 w-[18px]" />
+                        <AddTaskIcon
+                          aria-hidden="true"
+                          className="h-4 w-[18px]"
+                        />
                       </span>
                       <p className="text-[10px] leading-4 font-medium text-[#041B3C]">
                         No tasks have been added to this epic yet
@@ -1198,7 +1280,21 @@ export function EpicDetailsModal({
             email: member.email,
             avatarUrl: member.avatarUrl,
           }))}
-          projectEpics={[]}
+          projectMembersLoading={membersLoading}
+          projectMembersError={membersError}
+          onRefreshProjectMembers={() =>
+            setMembersAttempt((value) => value + 1)
+          }
+          projectEpics={taskProjectEpics}
+          projectEpicsLoading={
+            taskProjectEpicsLoading ||
+            (!taskProjectEpicsLoaded && !taskProjectEpicsError)
+          }
+          projectEpicsError={taskProjectEpicsError}
+          onRefreshProjectEpics={() =>
+            setTaskProjectEpicsAttempt((value) => value + 1)
+          }
+          onTaskUpdated={handleTaskUpdated}
           epic={
             currentResult?.epic
               ? {

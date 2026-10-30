@@ -13,10 +13,7 @@ interface MobileNavigationProps {
   onOpen?: () => void;
 }
 
-export function MobileNavigation({
-  isOpen,
-  onClose,
-}: MobileNavigationProps) {
+export function MobileNavigation({ isOpen, onClose }: MobileNavigationProps) {
   const pathname = usePathname();
   const { logout, isLoggingOut } = useUser();
   const { activeProjectId, activeProjectName } = useActiveProject();
@@ -94,10 +91,18 @@ export function MobileNavigation({
       ]
     : [];
 
-  const epicsHref = activeProjectId ? `/project/${activeProjectId}/epics` : '/project';
-  const tasksHref = activeProjectId ? `/project/${activeProjectId}/tasks` : '/project';
-  const membersHref = activeProjectId ? `/project/${activeProjectId}/members` : '/project';
-  const detailsHref = activeProjectId ? `/project/${activeProjectId}/edit` : '/project';
+  const epicsHref = activeProjectId
+    ? `/project/${activeProjectId}/epics`
+    : '/project';
+  const tasksHref = activeProjectId
+    ? `/project/${activeProjectId}/tasks`
+    : '/project';
+  const membersHref = activeProjectId
+    ? `/project/${activeProjectId}/members`
+    : '/project';
+  const detailsHref = activeProjectId
+    ? `/project/${activeProjectId}/edit`
+    : '/project';
 
   return (
     <>
@@ -109,10 +114,10 @@ export function MobileNavigation({
             onClick={onClose}
           />
 
-          <div className="relative z-10 flex h-full w-[280px] max-w-[85vw] flex-col justify-between bg-surface-low px-5 pt-3 pb-5 shadow-2xl transition-transform duration-300">
+          <div className="bg-surface-low relative z-10 flex h-full w-[280px] max-w-[85vw] flex-col justify-between px-5 pt-3 pb-5 shadow-2xl transition-transform duration-300">
             <div className="flex flex-col gap-6">
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-card-border pb-4">
+              <div className="border-card-border flex items-center justify-between border-b pb-4">
                 <Link
                   href="/project"
                   onClick={onClose}
@@ -134,7 +139,7 @@ export function MobileNavigation({
                   type="button"
                   onClick={onClose}
                   aria-label="Close navigation menu"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-900 transition-colors hover:bg-card-border"
+                  className="hover:bg-card-border flex h-8 w-8 items-center justify-center rounded-lg text-slate-900 transition-colors"
                 >
                   <svg
                     className="h-5 w-5"
@@ -159,7 +164,7 @@ export function MobileNavigation({
                   onClick={onClose}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
                     pathname === '/project'
-                      ? 'border border-card-border bg-white shadow-2xs'
+                      ? 'border-card-border border bg-white shadow-2xs'
                       : 'hover:bg-white/60'
                   }`}
                 >
@@ -176,11 +181,11 @@ export function MobileNavigation({
                 </Link>
 
                 <Link
-                  href="/statistics"
+                  href="/my-statistics"
                   onClick={onClose}
                   className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
-                    pathname === '/statistics'
-                      ? 'border border-card-border bg-white shadow-2xs'
+                    pathname === '/my-statistics'
+                      ? 'border-card-border border bg-white shadow-2xs'
                       : 'hover:bg-white/60'
                   }`}
                 >
@@ -200,13 +205,13 @@ export function MobileNavigation({
               {/* Active Project Accordion inside Drawer (Visible when inside a project) */}
               {activeProjectId && (
                 <>
-                  <div className="-mt-3 border-t border-card-border" />
+                  <div className="border-card-border -mt-3 border-t" />
 
-                  <div className="flex flex-col overflow-hidden rounded-[12px] border border-card-border">
+                  <div className="border-card-border flex flex-col overflow-hidden rounded-[12px] border">
                     <button
                       type="button"
                       onClick={() => setIsAccordionOpen((prev) => !prev)}
-                      className="flex w-full items-center justify-between bg-input-bg p-3 text-left transition-colors hover:bg-input-bg-hover"
+                      className="bg-input-bg hover:bg-input-bg-hover flex w-full items-center justify-between p-3 text-left transition-colors"
                     >
                       <div className="flex min-w-0 items-center gap-2.5">
                         <Image
@@ -268,16 +273,16 @@ export function MobileNavigation({
             </div>
 
             {/* Bottom Logout Button in Drawer */}
-            <div className="mt-auto border-t border-card-border pt-4">
+            <div className="border-card-border mt-auto border-t pt-4">
               <button
                 type="button"
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold text-error transition-colors hover:bg-error-bg/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-error hover:bg-error-bg/50 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[14px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoggingOut ? (
                   <svg
-                    className="h-4.5 w-4.5 animate-spin shrink-0 text-error"
+                    className="text-error h-4.5 w-4.5 shrink-0 animate-spin"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -313,13 +318,14 @@ export function MobileNavigation({
       )}
 
       {/* 2. Mobile Bottom Navigation Bar */}
-      <nav className="fixed right-0 bottom-0 left-0 z-40 flex h-[64px] w-full items-center justify-center border-t border-card-border bg-surface-low px-2 shadow-lg md:hidden">
+      <nav className="border-card-border bg-surface-low fixed right-0 bottom-0 left-0 z-40 flex h-[64px] w-full items-center justify-center border-t px-2 shadow-lg md:hidden">
         <div className="flex w-full items-center justify-around">
           {/* Epics */}
           <Link
             href={epicsHref}
             className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
-              activeProjectId && pathname === `/project/${activeProjectId}/epics`
+              activeProjectId &&
+              pathname === `/project/${activeProjectId}/epics`
                 ? 'text-primary'
                 : 'text-slate-600'
             }`}
@@ -338,7 +344,8 @@ export function MobileNavigation({
           <Link
             href={tasksHref}
             className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
-              activeProjectId && pathname === `/project/${activeProjectId}/tasks`
+              activeProjectId &&
+              pathname === `/project/${activeProjectId}/tasks`
                 ? 'text-primary'
                 : 'text-slate-600'
             }`}
@@ -374,7 +381,8 @@ export function MobileNavigation({
           <Link
             href={membersHref}
             className={`flex flex-col items-center gap-1 text-[10px] font-semibold transition-colors ${
-              activeProjectId && pathname === `/project/${activeProjectId}/members`
+              activeProjectId &&
+              pathname === `/project/${activeProjectId}/members`
                 ? 'text-primary'
                 : 'text-slate-600'
             }`}

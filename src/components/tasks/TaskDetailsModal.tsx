@@ -1,5 +1,10 @@
 'use client';
 
+import { useCallback, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { ApiError } from '@/src/lib/api/members';
+import { updateTaskDetails } from '@/src/lib/tasks-api';
 import TaskDetailsContent from './task-details/TaskDetailsContent';
 import TaskDetailsError from './task-details/TaskDetailsError';
 import TaskDetailsFooter from './task-details/TaskDetailsFooter';
@@ -7,6 +12,7 @@ import TaskDetailsHeader from './task-details/TaskDetailsHeader';
 import TaskDetailsLoading from './task-details/TaskDetailsLoading';
 import TaskDetailsSidebar from './task-details/TaskDetailsSidebar';
 import type { TaskDetailsModalProps } from './task-details/types';
+import type { EditableTaskField } from './task-details/types';
 import { useModalA11y } from './task-details/useModal';
 import { useTaskDetails } from './task-details/useTaskDetails';
 
@@ -15,14 +21,76 @@ export default function TaskDetailsModal({
   taskId,
   assignee,
   projectMembers,
+  projectMembersLoading = false,
+  projectMembersError,
   projectEpics,
+  projectEpicsLoading = false,
+  projectEpicsError,
   epic,
+  onRefreshProjectMembers,
+  onRefreshProjectEpics,
+  onTaskUpdated,
   onClose,
 }: TaskDetailsModalProps) {
   const { closeButtonRef, desktopCloseButtonRef, dialogRef } =
     useModalA11y(onClose);
-  const { currentState, retry } = useTaskDetails(projectId, taskId);
+  const { currentState, retry, token, updateTask } = useTaskDetails(
+    projectId,
+    taskId
+  );
+  const router = useRouter();
+  const [savingFields, setSavingFields] = useState<
+    Record<EditableTaskField, boolean>
+  >({
+    title: false,
+    description: false,
+    assignee_id: false,
+    due_date: false,
+    epic_id: false,
+    status: false,
+  });
+  const fieldsInFlight = useRef(new Set<EditableTaskField>());
   const task = currentState.status === 'success' ? currentState.task : null;
+
+  const handleUpdate = useCallback(
+    async (updates: import('@/src/lib/tasks-api').UpdateTaskPayload) => {
+      const field = Object.keys(updates)[0] as EditableTaskField | undefined;
+      if (
+        !field ||
+        currentState.status !== 'success' ||
+        fieldsInFlight.current.has(field)
+      ) {
+        return;
+      }
+
+      if (!token) {
+        toast.error('Failed to update task. Please try again.');
+        router.replace('/login');
+        return;
+      }
+
+      const previousValue = currentState.task[field];
+      fieldsInFlight.current.add(field);
+      setSavingFields((current) => ({ ...current, [field]: true }));
+      updateTask(updates);
+
+      try {
+        await updateTaskDetails(taskId, token, updates);
+        onTaskUpdated?.(taskId, updates);
+        toast.success('Task updated successfully.');
+      } catch (error: unknown) {
+        updateTask({ [field]: previousValue });
+        if (error instanceof ApiError && error.status === 401) {
+          router.replace('/login');
+        }
+        toast.error('Failed to update task. Please try again.');
+      } finally {
+        fieldsInFlight.current.delete(field);
+        setSavingFields((current) => ({ ...current, [field]: false }));
+      }
+    },
+    [currentState, onTaskUpdated, router, taskId, token, updateTask]
+  );
 
   return (
     <div
@@ -41,6 +109,8 @@ export default function TaskDetailsModal({
       >
         <TaskDetailsHeader
           task={task}
+          savingStatus={savingFields.status}
+          onUpdate={handleUpdate}
           closeButtonRef={closeButtonRef}
           onClose={onClose}
         />
@@ -50,12 +120,25 @@ export default function TaskDetailsModal({
             <TaskDetailsLoading />
           ) : currentState.status === 'success' ? (
             <>
-              <TaskDetailsContent task={currentState.task} />
+              <TaskDetailsContent
+                task={currentState.task}
+                savingTitle={savingFields.title}
+                savingDescription={savingFields.description}
+                onUpdate={handleUpdate}
+              />
               <TaskDetailsSidebar
                 task={currentState.task}
                 assignee={assignee}
                 projectMembers={projectMembers}
+                projectMembersLoading={projectMembersLoading}
+                projectMembersError={projectMembersError}
                 projectEpics={projectEpics}
+                projectEpicsLoading={projectEpicsLoading}
+                projectEpicsError={projectEpicsError}
+                savingFields={savingFields}
+                onRefreshProjectMembers={onRefreshProjectMembers}
+                onRefreshProjectEpics={onRefreshProjectEpics}
+                onUpdate={handleUpdate}
                 epic={epic}
               />
             </>

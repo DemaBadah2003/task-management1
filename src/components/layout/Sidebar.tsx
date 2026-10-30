@@ -163,10 +163,10 @@ export function Sidebar({
 
           {/* My Statistics Link */}
           <Link
-            href="/statistics"
+            href="/my-statistics"
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors',
-              pathname === '/statistics'
+              pathname === '/my-statistics'
                 ? 'border-card-border border bg-white shadow-2xs'
                 : 'hover:bg-white/60',
               isCollapsed && 'justify-center px-0'

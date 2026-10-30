@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useDroppable } from '@dnd-kit/react';
 import type { ProjectMember, Task, TaskStatusConfig } from '@/src/types/task';
 import AddTaskButton from './AddTaskButton';
 import ColumnEmptyState from './ColumnEmptyState';
@@ -13,6 +14,8 @@ interface BoardColumnProps {
   infiniteEnabled: boolean;
   hasMore: boolean;
   loadMoreError: boolean;
+  isDragging: boolean;
+  updatingTaskIds: Set<string>;
   onLoadMore: () => void;
   members: ProjectMember[];
   onTaskSelect: (task: Task, assignee?: ProjectMember) => void;
@@ -57,11 +60,19 @@ export default function BoardColumn({
   infiniteEnabled,
   hasMore,
   loadMoreError,
+  isDragging,
+  updatingTaskIds,
   onLoadMore,
   members,
   onTaskSelect,
 }: BoardColumnProps) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const { ref, isDropTarget } = useDroppable({
+    id: `status-${status.key}`,
+    type: 'task-status',
+    accept: 'task',
+    data: { kind: 'status', status: status.key },
+  });
 
   useEffect(() => {
     if (
@@ -95,8 +106,9 @@ export default function BoardColumn({
 
   return (
     <section
+      ref={ref}
       aria-label={`${status.label} tasks`}
-      className={`${!loading && tasks.length === 0 ? 'hidden md:flex' : 'flex'} w-full min-w-0 flex-col gap-0 md:w-60 md:shrink-0 md:gap-3`}
+      className={`${!loading && tasks.length === 0 && !isDragging ? 'hidden md:flex' : 'flex'} w-full min-w-0 flex-col gap-0 rounded-lg md:w-60 md:shrink-0 md:gap-3 ${isDropTarget ? 'bg-blue-50/70 ring-2 ring-blue-400' : ''}`}
     >
       <header className="hidden min-h-6 items-center gap-2 px-1 md:flex">
         <span className={`size-1.5 shrink-0 rounded-full ${status.dotClass}`} />
@@ -119,9 +131,15 @@ export default function BoardColumn({
         {loading && tasks.length === 0 ? (
           <ColumnLoading />
         ) : tasks.length === 0 ? (
-          <div className="hidden md:block">
-            <ColumnEmptyState />
-          </div>
+          isDragging ? (
+            <div className="rounded-lg border border-dashed border-blue-200 bg-white/70 p-4 text-center text-xs font-medium text-blue-700 md:p-3">
+              Drop task in {status.label}
+            </div>
+          ) : (
+            <div className="hidden md:block">
+              <ColumnEmptyState />
+            </div>
+          )
         ) : (
           <div className="flex flex-col gap-3">
             {tasks.map((task) => (
@@ -131,6 +149,7 @@ export default function BoardColumn({
                 assignee={members.find(
                   (member) => member.user_id === task.assignee_id
                 )}
+                isUpdating={loading || updatingTaskIds.has(task.id)}
                 onClick={() =>
                   onTaskSelect(
                     task,

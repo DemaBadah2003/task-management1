@@ -1,38 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAccessToken } from "@/src/hooks/useAccessToken";
 import { fetchProjectMembers } from "@/src/lib/tasks-api";
 import type { ProjectMember } from "@/src/types/task";
 
+interface MembersResult {
+  key: string;
+  members: ProjectMember[];
+  error: string | null;
+}
+
 export default function useTaskFormMembers(projectId: string) {
   const { token, loading: tokenLoading } = useAccessToken();
-  const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [result, setResult] = useState<MembersResult | null>(null);
+  const requestKey = `${projectId}:${reloadKey}:${token ? "authenticated" : "anonymous"}`;
+
+  const retry = useCallback(() => {
+    setReloadKey((value) => value + 1);
+  }, []);
 
   useEffect(() => {
-    if (tokenLoading) return;
-    if (!token) {
-      setIsLoading(false);
-      setError("Your session has expired. Please log in again.");
-      return;
-    }
+    if (tokenLoading || !token) return;
     const controller = new AbortController();
-    setIsLoading(true);
-    setError(null);
 
     fetchProjectMembers(projectId, token, controller.signal)
-      .then(setMembers)
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err.message);
+      .then((members) => {
+        if (!controller.signal.aborted) {
+          setResult({ key: requestKey, members, error: null });
+        }
       })
-      .finally(() => {
-        if (!controller.signal.aborted) setIsLoading(false);
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          setResult({
+            key: requestKey,
+            members: [],
+            error: err.message ?? "Failed to load project members.",
+          });
+        }
       });
 
     return () => controller.abort();
-  }, [projectId, token, tokenLoading]);
+  }, [projectId, requestKey, token, tokenLoading]);
 
-  return { members, isLoading, error };
+  const currentResult = result?.key === requestKey ? result : null;
+  const previousProjectResult =
+    token && result?.key.startsWith(`${projectId}:`) ? result : null;
+
+  return {
+    members: currentResult?.members ?? previousProjectResult?.members ?? [],
+    isLoading: tokenLoading || Boolean(token && !currentResult),
+    error: tokenLoading
+      ? null
+      : !token
+        ? "Your session has expired. Please log in again."
+        : (currentResult?.error ?? null),
+    retry,
+  };
 }
