@@ -58,8 +58,15 @@ function rangeLength(startDate: string, endDate: string) {
   }
   const start = Date.parse(`${startDate}T00:00:00Z`);
   const end = Date.parse(`${endDate}T00:00:00Z`);
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start)
+  if (
+    !Number.isFinite(start) ||
+    !Number.isFinite(end) ||
+    dateInputValue(new Date(start)) !== startDate ||
+    dateInputValue(new Date(end)) !== endDate ||
+    end < start
+  ) {
     return null;
+  }
   return Math.floor((end - start) / DAY_MS) + 1;
 }
 
@@ -75,7 +82,10 @@ function formatDay(value: string) {
 function statusName(status: TaskStatus) {
   const label =
     TASK_STATUSES.find((item) => item.key === status)?.label ?? status;
-  return label.toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return label
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/\bQa\b/g, 'QA');
 }
 
 function statusTotal(stats: CalendarTaskStats | null) {
@@ -625,7 +635,8 @@ export default function MyStatisticsDashboard() {
             All Projects
           </h2>
           <span className="text-xs text-slate-500">
-            Task counts for selected dates
+            Date-range counts; project and status filters are not supported
+            here.
           </span>
         </div>
         {projectCountsError ? (
