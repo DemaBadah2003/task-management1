@@ -55,7 +55,7 @@ async function readErrorMessage(
   try {
     const body: unknown = await response.json();
     if (isRecord(body)) {
-      for (const field of ["message", "msg", "error_description"]) {
+      for (const field of ["message", "msg", "error_description", "error"]) {
         const value = body[field];
         if (typeof value === "string" && value.length > 0) return value;
       }
@@ -138,26 +138,57 @@ export async function createProjectApi(
 }
 
 export async function getProjectsApi(): Promise<Project[]> {
-  const { url, anonKey } = getSupabaseConfig();
-  const headers = buildHeaders(anonKey, getSessionToken());
-  const response = await request(
-    `${url}/rest/v1/projects?select=*&order=created_at.desc`,
-    { method: "GET", headers }
-  );
+  const projects: Project[] = [];
+  const token = getSessionToken();
+  let offset = 0;
+  let totalCount = 0;
 
-  if (!response.ok) {
-    throw new ApiError(
-      await readErrorMessage(response, "Failed to fetch projects."),
-      response.status
+  do {
+    const response = await request(
+      `/api/projects?limit=50&offset=${offset}`,
+      {
+        method: "GET",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        cache: "no-store",
+      }
     );
-  }
 
-  const data = await readJson(response, "projects");
-  if (!Array.isArray(data)) {
-    throw new ApiError("The projects response was not a list.", response.status);
-  }
+    if (!response.ok) {
+      throw new ApiError(
+        await readErrorMessage(response, "Failed to fetch projects."),
+        response.status
+      );
+    }
 
-  return data.map(mapProject);
+    const data = await readJson(response, "projects");
+    if (
+      !isRecord(data) ||
+      !Array.isArray(data.projects) ||
+      typeof data.totalCount !== "number" ||
+      !Number.isSafeInteger(data.totalCount) ||
+      data.totalCount < 0
+    ) {
+      throw new ApiError(
+        "The projects response did not contain a valid project list.",
+        response.status
+      );
+    }
+
+    const page = data.projects.map(mapProject);
+    const nextOffset = offset + page.length;
+    if (page.length === 0 && nextOffset < data.totalCount) {
+      throw new ApiError(
+        "The projects response was incomplete.",
+        response.status
+      );
+    }
+
+    projects.push(...page);
+    offset = nextOffset;
+    totalCount = data.totalCount;
+  } while (offset < totalCount);
+
+  return projects;
 }
 
 export async function getProjectByIdApi(id: string): Promise<Project> {

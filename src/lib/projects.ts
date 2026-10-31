@@ -22,12 +22,13 @@ export function parseTotalCount(contentRange: string | null): number | null {
   return Number.isInteger(n) && n >= 0 ? n : null;
 }
 
-// نفس الكوكيز اللي بيقرأها proxy.ts
-async function getAccessToken(): Promise<string> {
+// نفس الكوكيز المستخدمة في proxy.ts، مع token المتصفح كـ fallback
+async function getAccessToken(fallbackToken?: string): Promise<string> {
   const store = await cookies();
   return (
     store.get('taskly_session')?.value ||
     store.get('access_token')?.value ||
+    fallbackToken ||
     ''
   );
 }
@@ -45,11 +46,13 @@ function mapProject(item: any): Project {
 export async function fetchProjects({
   limit = PAGE_SIZE,
   offset = 0,
+  accessToken,
 }: {
   limit?: number;
   offset?: number;
+  accessToken?: string;
 } = {}): Promise<ProjectsResponse> {
-  const token = await getAccessToken();
+  const token = await getAccessToken(accessToken);
 
   const headers: Record<string, string> = {
     apikey: SUPABASE_ANON_KEY,

@@ -265,6 +265,16 @@ export default function MyStatisticsDashboard() {
   const projectCountsLoading =
     !rangeError &&
     (tokenLoading || Boolean(token && !projectCounts && !projectCountsError));
+  const allProjectCounts =
+    projects && projectCounts
+      ? projects.map((project) => ({
+          project_id: project.id,
+          project_name: project.name,
+          tasks_count:
+            projectCounts.find((item) => item.project_id === project.id)
+              ?.tasks_count ?? 0,
+        }))
+      : projectCounts;
 
   const calendarDays = useMemo(() => {
     if (!daysInRange || daysInRange > 7) return [];
@@ -1031,7 +1041,10 @@ export default function MyStatisticsDashboard() {
           {projectCountsError ? (
             <ErrorPanel message={projectCountsError} onRetry={retryCounts} />
           ) : null}
-          {projectCountsLoading ? (
+          {projectsError ? (
+            <ErrorPanel message={projectsError} onRetry={retryProjectsList} />
+          ) : null}
+          {projectCountsLoading || projectsLoading ? (
             <div role="status" aria-busy="true" className="space-y-1.5">
               {[0, 1, 2].map((item) => (
                 <div
@@ -1040,13 +1053,15 @@ export default function MyStatisticsDashboard() {
                 />
               ))}
             </div>
-          ) : !projectCountsError && (projectCounts?.length ?? 0) === 0 ? (
+          ) : !projectCountsError &&
+            !projectsError &&
+            (allProjectCounts?.length ?? 0) === 0 ? (
             <p className="py-6 text-xs text-slate-500">
-              No project tasks found for this date range.
+              No projects found.
             </p>
           ) : (
             <ul className="space-y-4">
-              {projectCounts?.map((item) => (
+              {allProjectCounts?.map((item) => (
                 <li
                   key={item.project_id}
                   className="flex items-center justify-between gap-4 text-xs leading-4"
